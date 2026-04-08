@@ -6,6 +6,7 @@ import Loader from "../components/Loader";
 
 const API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 const beurl = import.meta.env.VITE_BE_URL;
+const baseurl = import.meta.env.VITE_BASE_URL;
 const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
   const { user, isLoaded } = useUser();
