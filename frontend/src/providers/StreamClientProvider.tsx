@@ -4,7 +4,7 @@ import { useUser, useAuth } from "@clerk/clerk-react";
 
 import Loader from "../components/Loader";
 
-const API_KEY = import.meta.env.VITE_STREAM_API_KEY;
+const API_KEY = import.meta.env.j6ptqb2dm72c;
 const beurl = import.meta.env.VITE_BE_URL;
 const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
