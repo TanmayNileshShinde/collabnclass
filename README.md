@@ -1,5 +1,12 @@
 # CollabClass 🚀
 
+<p align="left">
+  <a href="https://collabnclass.vercel.app"><img src="https://img.shields.io/badge/Live_Demo-collabnclass.vercel.app-0070F3?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" /></a>
+  <a href="https://github.com/TanmayNileshShinde/collabnclass/stargazers"><img src="https://img.shields.io/github/stars/TanmayNileshShinde/collabnclass?style=for-the-badge&logo=github&color=ffb86c" alt="Stars" /></a>
+  <a href="https://github.com/TanmayNileshShinde/collabnclass/network/members"><img src="https://img.shields.io/github/forks/TanmayNileshShinde/collabnclass?style=for-the-badge&logo=github&color=8be9fd" alt="Forks" /></a>
+  <a href="./SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-2ea44f?style=for-the-badge&logo=shield" alt="Security Policy" /></a>
+</p>
+
 A comprehensive, full-stack collaborative learning and video conferencing application. Built with a TypeScript React (Vite) frontend and an Express backend, CollabClass seamlessly integrates real-time video communication, collaborative whiteboarding, AI assistance, and GitHub repository importing to create an ultimate virtual classroom or developer workspace.
 
 ---
