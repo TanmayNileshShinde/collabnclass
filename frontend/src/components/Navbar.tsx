@@ -146,7 +146,7 @@ const Navbar = () => {
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="relative flex items-center justify-center size-9 sm:size-10 rounded-xl transition-all duration-300 group border focus:outline-none focus:ring-2 focus:ring-cyan-400/50 cursor-pointer"
+            className="relative flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300 group border focus:outline-none focus:ring-2 focus:ring-cyan-400/50 cursor-pointer"
             style={{
               background: theme === "dark" ? 'rgba(0,20,50,0.7)' : 'rgba(255,255,255,0.95)',
               borderColor: theme === "dark" ? 'rgba(0,180,255,0.18)' : 'rgba(0,140,240,0.22)',
@@ -162,26 +162,26 @@ const Navbar = () => {
             }}
           >
             {theme === "dark" ? (
-              <Sun className="size-4 sm:size-5 text-amber-300 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110 drop-shadow-[0_0_8px_rgba(252,211,77,0.6)]" />
+              <Sun className="w-5 h-5 text-amber-300 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110 drop-shadow-[0_0_8px_rgba(252,211,77,0.6)]" />
             ) : (
-              <Moon className="size-4 sm:size-5 text-cyan-600 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110 drop-shadow-[0_0_6px_rgba(8,145,178,0.3)]" />
+              <Moon className="w-5 h-5 text-cyan-600 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110 drop-shadow-[0_0_6px_rgba(8,145,178,0.3)]" />
             )}
           </button>
 
           <SignedIn>
             <div
-              className="p-1.5 rounded-xl transition-all duration-300"
+              className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center transition-all duration-300"
               style={{
                 background: theme === 'dark' ? 'rgba(0,20,50,0.7)' : 'rgba(255,255,255,0.95)',
-                border: theme === 'dark' ? '1px solid rgba(0,180,255,0.15)' : '1px solid rgba(0,140,240,0.22)',
+                border: theme === 'dark' ? '1px solid rgba(0,180,255,0.18)' : '1px solid rgba(0,140,240,0.22)',
                 boxShadow: theme === 'dark' ? '0 0 12px rgba(0,80,180,0.15)' : '0 2px 8px rgba(0,60,140,0.06)',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = theme === 'dark' ? 'rgba(0,200,255,0.35)' : 'rgba(0,140,240,0.45)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = theme === 'dark' ? '0 0 20px rgba(0,120,220,0.3)' : '0 4px 14px rgba(0,80,180,0.12)';
+                (e.currentTarget as HTMLDivElement).style.borderColor = theme === 'dark' ? 'rgba(0,229,255,0.45)' : 'rgba(0,140,240,0.5)';
+                (e.currentTarget as HTMLDivElement).style.boxShadow = theme === 'dark' ? '0 0 20px rgba(0,229,255,0.25)' : '0 4px 14px rgba(0,80,180,0.15)';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = theme === 'dark' ? 'rgba(0,180,255,0.15)' : 'rgba(0,140,240,0.22)';
+                (e.currentTarget as HTMLDivElement).style.borderColor = theme === 'dark' ? 'rgba(0,180,255,0.18)' : 'rgba(0,140,240,0.22)';
                 (e.currentTarget as HTMLDivElement).style.boxShadow = theme === 'dark' ? '0 0 12px rgba(0,80,180,0.15)' : '0 2px 8px rgba(0,60,140,0.06)';
               }}
             >
