@@ -828,6 +828,37 @@ textarea,
   animation: gradient 3s ease infinite;
 }
 
+/* ======== Hero Clock Shimmer & Gradient Text ======== */
+.hero-clock-text {
+  display: inline-block;
+  width: fit-content;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  background-size: 200% auto;
+  animation: shimmerText 5s linear infinite;
+}
+
+.hero-clock-dark {
+  background-image: linear-gradient(135deg, #ffffff 0%, #a5f3fc 35%, #00e5ff 70%, #0284c7 100%);
+  filter: drop-shadow(0 0 35px rgba(0, 229, 255, 0.45));
+}
+
+.hero-clock-light {
+  background-image: linear-gradient(135deg, #0369a1 0%, #0284c7 35%, #0ea5e9 70%, #0369a1 100%);
+  filter: drop-shadow(0 4px 15px rgba(2, 132, 199, 0.15));
+}
+
+@keyframes shimmerText {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

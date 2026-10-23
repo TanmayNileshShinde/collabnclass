@@ -468,17 +468,9 @@ const Home = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-auto">
             <div className="flex flex-col">
               <h1
-                className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none"
-                style={{
-                  background:
-                    theme === "dark" ? "linear-gradient(135deg, #ffffff 0%, #a5f3fc 35%, #00e5ff 70%, #0284c7 100%)" : "linear-gradient(135deg, #0369a1 0%, #0284c7 35%, #0ea5e9 70%, #0369a1 100%)",
-                  backgroundSize: "200% auto",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  filter: theme === "dark" ? "drop-shadow(0 0 35px rgba(0, 229, 255, 0.45))" : "drop-shadow(0 4px 15px rgba(2, 132, 199, 0.15))",
-                  animation: "shimmerText 5s linear infinite",
-                }}
+                className={`hero-clock-text text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none ${
+                  theme === "dark" ? "hero-clock-dark" : "hero-clock-light"
+                }`}
               >
                 {time}
               </h1>
