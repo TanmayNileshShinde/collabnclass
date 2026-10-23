@@ -465,6 +465,58 @@ video[srcObject=""] {
     border-color: rgba(0, 229, 255, 0.6);
     box-shadow: 0 0 15px rgba(0, 229, 255, 0.25);
   }
+  /* ======== Light Mode Overrides for Cyber Glass Panels ======== */
+  html:not(.dark) .glass-cyber-panel {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 140, 240, 0.16);
+    box-shadow: 0 8px 30px 0 rgba(0, 40, 100, 0.08);
+  }
+
+  html:not(.dark) .glass-cyber-elevated {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 140, 240, 0.2);
+    box-shadow: 0 12px 35px 0 rgba(0, 40, 100, 0.09);
+  }
+
+  html:not(.dark) .glass-cyber-card {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 140, 240, 0.15);
+    box-shadow: 0 4px 20px 0 rgba(0, 40, 100, 0.06);
+  }
+
+  html:not(.dark) .glass-cyber-card:hover {
+    background: rgba(240, 248, 255, 0.95);
+    border-color: rgba(0, 180, 255, 0.45);
+    box-shadow: 0 8px 30px 0 rgba(0, 60, 140, 0.12);
+  }
+
+  html:not(.dark) .glassmorphism-card {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 140, 240, 0.15);
+    box-shadow: 0 4px 20px 0 rgba(0, 40, 100, 0.06);
+  }
+
+  html:not(.dark) .glassmorphism-card:hover {
+    background: rgba(240, 248, 255, 0.95);
+    border-color: rgba(0, 180, 255, 0.45);
+    box-shadow: 0 8px 30px 0 rgba(0, 60, 140, 0.12);
+  }
+
+  html:not(.dark) .btn-cyber-ghost {
+    background: rgba(240, 248, 255, 0.85);
+    color: #0284c7;
+    border: 1px solid rgba(2, 132, 199, 0.25);
+  }
+
+  html:not(.dark) .btn-cyber-ghost:hover {
+    background: rgba(224, 242, 254, 0.95);
+    border-color: rgba(2, 132, 199, 0.5);
+    box-shadow: 0 0 15px rgba(2, 132, 199, 0.2);
+  }
+
+  html:not(.dark) .cl-userButtonPopoverActionButton {
+    color: #0f172a;
+  }
 }
 
 /* ======== Ocean Dark Cyberpunk Design Tokens & CSS Variables ======== */

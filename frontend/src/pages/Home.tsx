@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "@clerk/clerk-react";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import MeetingTypeList from "@/components/MeetingTypeList";
@@ -197,6 +198,7 @@ const DepthMeter = () => {
 
 const Home = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { user } = useUser();
   const client = useStreamVideoClient();
   const { toast } = useToast();
@@ -354,14 +356,14 @@ const Home = () => {
   };
 
   return (
-    <section className="w-full flex flex-col gap-6 sm:gap-8 lg:gap-10 text-white transition-all duration-300 max-w-7xl mx-auto px-2 sm:px-0">
+    <section className="w-full flex flex-col gap-6 sm:gap-8 lg:gap-10 dark:text-white text-slate-900 transition-all duration-300 max-w-7xl mx-auto px-2 sm:px-0">
       {/* ===================== HERO CYBER BANNER ===================== */}
       <div
         className="min-h-[280px] sm:min-h-[320px] lg:h-[330px] w-full rounded-2xl sm:rounded-[28px] relative overflow-hidden group flex flex-col justify-between"
         style={{
-          background: "linear-gradient(135deg, #020813 0%, #041224 45%, #061c38 100%)",
-          border: "1px solid rgba(0, 180, 255, 0.2)",
-          boxShadow: "0 0 60px rgba(0, 100, 180, 0.22), inset 0 1px 0 rgba(0, 229, 255, 0.12)",
+          background: theme === "dark" ? "linear-gradient(135deg, #020813 0%, #041224 45%, #061c38 100%)" : "linear-gradient(135deg, #031e3d 0%, #053366 45%, #07478d 100%)",
+          border: theme === "dark" ? "1px solid rgba(0, 180, 255, 0.2)" : "1px solid rgba(0, 140, 240, 0.35)",
+          boxShadow: theme === "dark" ? "0 0 60px rgba(0, 100, 180, 0.22), inset 0 1px 0 rgba(0, 229, 255, 0.12)" : "0 10px 35px rgba(0, 80, 180, 0.15), inset 0 1px 0 rgba(0, 229, 255, 0.2)",
         }}
       >
         {/* Radial ambient lighting */}
@@ -519,9 +521,9 @@ const Home = () => {
           onSubmit={handleQuickJoin}
           className="glass-cyber-panel rounded-2xl p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 border border-cyan-500/30 shadow-neon-cyan/20"
         >
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyber-surface/90 border border-cyan-500/20 self-start sm:self-auto">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl dark:bg-cyber-surface/90 bg-cyan-50 dark:border-cyan-500/20 border-cyan-200 self-start sm:self-auto">
             <Zap className="size-4 text-cyan-400 animate-pulse" />
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-cyan-300 whitespace-nowrap">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider dark:text-cyan-300 text-cyan-700 whitespace-nowrap">
               Quick Join
             </span>
           </div>
@@ -533,16 +535,16 @@ const Home = () => {
               value={quickCode}
               onChange={(e) => setQuickCode(e.target.value)}
               style={{
-                backgroundColor: "#020813",
-                borderColor: "rgba(0, 180, 255, 0.25)",
-                color: "#f0f9ff",
+                backgroundColor: theme === "dark" ? "#020813" : "#ffffff",
+                borderColor: theme === "dark" ? "rgba(0, 180, 255, 0.25)" : "rgba(0, 140, 240, 0.3)",
+                color: theme === "dark" ? "#f0f9ff" : "#0f172a",
               }}
-              className="w-full !bg-[#020813] border-cyan-500/25 text-slate-100 placeholder:text-slate-500 rounded-xl pr-20 font-mono text-xs sm:text-sm tracking-wide focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40 h-10 sm:h-11 backdrop-blur-md"
+              className="w-full dark:!bg-[#020813] !bg-white dark:border-cyan-500/25 border-slate-300 dark:text-slate-100 text-slate-900 placeholder:text-slate-400 rounded-xl pr-20 font-mono text-xs sm:text-sm tracking-wide focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40 h-10 sm:h-11 backdrop-blur-md"
             />
             <button
               type="button"
               onClick={handlePasteClipboard}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-[11px] font-medium text-cyan-300 border border-cyan-500/30 transition-colors flex items-center gap-1"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg dark:bg-cyan-500/10 bg-cyan-50 dark:hover:bg-cyan-500/20 hover:bg-cyan-100 text-[11px] font-medium dark:text-cyan-300 text-cyan-700 dark:border-cyan-500/30 border-cyan-200 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <ClipboardPaste className="size-3" />
               <span>Paste</span>
@@ -577,7 +579,7 @@ const Home = () => {
             <div className="text-xl sm:text-2xl font-extrabold text-white">
               {liveCalls?.length ?? 0}
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-slate-400 flex items-center gap-1.5 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 flex items-center gap-1.5 truncate">
               <span className="size-1.5 rounded-full bg-rose-500 animate-ping inline-block flex-shrink-0" />
               Live In Session
             </div>
@@ -593,7 +595,7 @@ const Home = () => {
             <div className="text-xl sm:text-2xl font-extrabold text-white">
               {upcomingCalls?.length ?? 0}
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-slate-400 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
               Upcoming Classes
             </div>
           </div>
@@ -608,7 +610,7 @@ const Home = () => {
             <div className="text-xl sm:text-2xl font-extrabold text-white">
               {endedCalls?.length ?? 0}
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-slate-400 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
               Completed Classes
             </div>
           </div>
@@ -623,7 +625,7 @@ const Home = () => {
             <div className="text-xs sm:text-sm font-bold text-emerald-300 truncate">
               Stream WebRTC
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold text-slate-400 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
               P2P Low Latency
             </div>
           </div>
@@ -647,7 +649,7 @@ const Home = () => {
       </div>
 
       {/* ===================== LIVE & TODAY'S SCHEDULE DISPATCH ===================== */}
-      <div className="glass-cyber-panel rounded-2xl sm:rounded-3xl p-5 sm:p-7 border border-cyan-500/20">
+      <div className="glass-cyber-panel rounded-2xl sm:rounded-3xl p-5 sm:p-7 dark:border-cyan-500/20 border-slate-200">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5 sm:mb-6">
           <div>
             <div className="flex items-center gap-2.5">
@@ -684,7 +686,7 @@ const Home = () => {
               return (
                 <div
                   key={call.id}
-                  className="rounded-2xl p-5 sm:p-6 bg-gradient-to-r from-rose-950/40 via-[#04162e] to-[#020e20] border border-rose-500/50 shadow-[0_0_35px_rgba(244,63,94,0.2)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all"
+                  className="rounded-2xl p-5 sm:p-6 dark:bg-gradient-to-r dark:from-rose-950/40 dark:via-[#04162e] dark:to-[#020e20] bg-gradient-to-r from-rose-50 via-white to-sky-50 dark:border-rose-500/50 border border-rose-300 shadow-sm dark:shadow-[0_0_35px_rgba(244,63,94,0.2)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all"
                 >
                   <div className="flex items-start gap-4">
                     <div className="size-12 rounded-2xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)] flex-shrink-0">
@@ -718,7 +720,7 @@ const Home = () => {
                         navigator.clipboard.writeText(meetingUrl);
                         toast({ title: "Class Link Copied!" });
                       }}
-                      className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 px-3 py-2 rounded-xl bg-white/5 border border-white/10 transition-colors"
+                      className="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-cyan-300 hover:text-cyan-700 flex items-center gap-1 px-3 py-2 rounded-xl dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 transition-colors"
                     >
                       <Copy className="size-3.5" />
                       <span>Copy Link</span>
@@ -747,7 +749,7 @@ const Home = () => {
                   return (
                     <div
                       key={call.id}
-                      className="rounded-2xl p-4 sm:p-5 bg-cyber-elevated/70 border border-cyan-500/20 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all"
+                      className="rounded-2xl p-4 sm:p-5 dark:bg-cyber-elevated/70 bg-white dark:border-cyan-500/20 border-slate-200 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
@@ -762,7 +764,7 @@ const Home = () => {
                       </div>
 
                       <div>
-                        <h4 className="text-base font-bold text-white truncate">
+                        <h4 className="text-base font-bold dark:text-white text-slate-900 truncate">
                           {meetingTitle}
                         </h4>
                         <p className="text-xs text-slate-400 mt-1">
@@ -803,7 +805,7 @@ const Home = () => {
               return (
                 <div
                   key={call.id}
-                  className="rounded-2xl p-4 sm:p-5 bg-cyber-elevated/70 border border-cyan-500/20 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all"
+                  className="rounded-2xl p-4 sm:p-5 dark:bg-cyber-elevated/70 bg-white dark:border-cyan-500/20 border-slate-200 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
@@ -818,7 +820,7 @@ const Home = () => {
                   </div>
 
                   <div>
-                    <h4 className="text-base font-bold text-white truncate">
+                    <h4 className="text-base font-bold dark:text-white text-slate-900 truncate">
                       {meetingTitle}
                     </h4>
                     <p className="text-xs text-slate-400 mt-1">
@@ -856,11 +858,11 @@ const Home = () => {
           </div>
         ) : (
           /* Empty state */
-          <div className="text-center py-10 sm:py-12 px-4 sm:px-6 rounded-2xl bg-cyber-surface/40 border border-cyan-500/10 flex flex-col items-center justify-center">
+          <div className="text-center py-10 sm:py-12 px-4 sm:px-6 rounded-2xl dark:bg-cyber-surface/40 bg-white dark:border-cyan-500/10 border-slate-200 flex flex-col items-center justify-center shadow-sm">
             <div className="size-14 sm:size-16 rounded-2xl sm:rounded-3xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 shadow-[0_0_25px_rgba(0,229,255,0.2)]">
               <Calendar className="size-7 sm:size-8" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-white mb-1">
+            <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 mb-1">
               No Classroom Sessions Right Now
             </h3>
             <p className="text-xs sm:text-sm text-slate-400 max-w-md mb-4 text-center">

@@ -25,9 +25,9 @@ const initialValues = {
 
 // Ocean Cyberpunk input/textarea classes
 const oceanInput =
-  "border border-[rgba(0,180,255,0.2)] bg-[rgba(2,8,19,0.7)] text-[rgba(240,249,255,0.95)] placeholder:text-[rgba(100,180,220,0.4)] focus-visible:ring-2 focus-visible:ring-[rgba(0,229,255,0.4)] focus-visible:ring-offset-0 transition-all duration-200 rounded-xl backdrop-blur-md";
+  "dark:border dark:border-[rgba(0,180,255,0.2)] border border-slate-300 dark:bg-[rgba(2,8,19,0.7)] bg-white dark:text-[rgba(240,249,255,0.95)] text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-0 transition-all duration-200 rounded-xl backdrop-blur-md";
 
-const oceanLabel = "text-sm font-semibold tracking-wide text-cyan-200";
+const oceanLabel = "text-sm font-semibold tracking-wide dark:text-cyan-200 text-slate-700";
 
 interface MeetingTypeListProps {
   onJoinClick?: () => void;
@@ -178,7 +178,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         description="Launch an instant live classroom with HD video, screen sharing & AI"
         badge="Instant Live"
         accent="cyan"
-        className="bg-gradient-to-br from-[#02182b] via-[#042442] to-[#011425]"
+        className="dark:bg-gradient-to-br dark:from-[#02182b] dark:via-[#042442] dark:to-[#011425] bg-gradient-to-br from-white via-cyan-50/50 to-sky-50/80 shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.45)]"
         handleClick={() => setMeetingState("isInstantMeeting")}
       />
       <HomeCard
@@ -187,7 +187,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         description="Connect to an existing classroom via 8-digit code or meeting URL"
         badge="Quick Code"
         accent="blue"
-        className="bg-gradient-to-br from-[#03152e] via-[#062047] to-[#021024]"
+        className="dark:bg-gradient-to-br dark:from-[#03152e] dark:via-[#062047] dark:to-[#021024] bg-gradient-to-br from-white via-sky-50/50 to-blue-50/80 shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.45)]"
         handleClick={() => setMeetingState("isJoiningMeeting")}
       />
       <HomeCard
@@ -196,7 +196,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         description="Plan lectures, configure agendas, and sync class calendars"
         badge="Calendar"
         accent="amber"
-        className="bg-gradient-to-br from-[#1c1503] via-[#2d2106] to-[#120d01]"
+        className="dark:bg-gradient-to-br dark:from-[#1c1503] dark:via-[#2d2106] dark:to-[#120d01] bg-gradient-to-br from-white via-amber-50/50 to-orange-50/80 shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.45)]"
         handleClick={() => setMeetingState("isScheduleMeeting")}
       />
       <HomeCard
@@ -205,7 +205,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         description="Access past recordings, attendance analytics, and lecture notes"
         badge="Vault"
         accent="purple"
-        className="bg-gradient-to-br from-[#160829] via-[#240e3f] to-[#0e041a]"
+        className="dark:bg-gradient-to-br dark:from-[#160829] dark:via-[#240e3f] dark:to-[#0e041a] bg-gradient-to-br from-white via-purple-50/50 to-indigo-50/80 shadow-sm dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.45)]"
         handleClick={() => navigate("/recordings")}
       />
 

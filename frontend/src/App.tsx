@@ -45,7 +45,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
                 "flex flex-1 flex-col transition-colors duration-300",
                 isMeetingPage
                   ? "p-0"
-                  : "px-3 sm:px-6 pb-12 pt-24 sm:pt-28 bg-[#020813] text-white selection:bg-cyan-500/30 selection:text-cyan-200"
+                  : "px-3 sm:px-6 pb-12 pt-24 sm:pt-28 dark:bg-[#020813] bg-slate-50 dark:text-white text-slate-900 transition-colors duration-300 selection:bg-cyan-500/30 selection:text-cyan-600 dark:selection:text-cyan-200"
               )}
             >
               {children}
@@ -70,7 +70,7 @@ function RootRedirect() {
 
 function App() {
   return (
-    <div className="min-h-screen dark:bg-black">
+    <div className="min-h-screen dark:bg-black bg-slate-50 transition-colors duration-300">
 
       <BrowserRouter>
 
