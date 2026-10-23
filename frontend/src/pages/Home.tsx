@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 // Animated SVG wave layer
-const OceanWaves = () => (
+const OceanWaves = ({ theme }: { theme: "dark" | "light" }) => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
     <svg
       className="absolute bottom-0 left-0 w-full"
@@ -40,12 +40,12 @@ const OceanWaves = () => (
     >
       <path
         d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
-        fill="rgba(0, 100, 180, 0.07)"
+        fill={theme === "dark" ? "rgba(0, 100, 180, 0.07)" : "rgba(2, 132, 199, 0.08)"}
         style={{ animation: "waveMove 8s ease-in-out infinite" }}
       />
       <path
         d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
-        fill="rgba(0, 150, 220, 0.05)"
+        fill={theme === "dark" ? "rgba(0, 150, 220, 0.05)" : "rgba(14, 165, 233, 0.06)"}
         style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
       />
     </svg>
@@ -117,13 +117,13 @@ const Scanlines = () => (
 );
 
 // Depth sonar ring
-const SonarRing = () => (
+const SonarRing = ({ theme }: { theme: "dark" | "light" }) => (
   <div className="absolute right-8 lg:right-14 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block opacity-35">
     <div
       className="w-16 h-16 rounded-full border flex items-center justify-center relative"
       style={{
-        borderColor: "rgba(0,180,255,0.2)",
-        background: "rgba(0,20,50,0.4)",
+        borderColor: theme === "dark" ? "rgba(0,180,255,0.2)" : "rgba(2,132,199,0.3)",
+        background: theme === "dark" ? "rgba(0,20,50,0.4)" : "rgba(255,255,255,0.7)",
         backdropFilter: "blur(4px)",
       }}
     >
@@ -134,7 +134,7 @@ const SonarRing = () => (
           style={{
             width: size * 4,
             height: size * 4,
-            borderColor: `rgba(0,200,255,${0.15 + i * 0.08})`,
+            borderColor: theme === "dark" ? `rgba(0,200,255,${0.15 + i * 0.08})` : `rgba(2,132,199,${0.2 + i * 0.1})`,
             animation: `depthPulse ${3 + i}s ease-in-out infinite`,
             animationDelay: `${i * 0.8}s`,
           }}
@@ -143,7 +143,7 @@ const SonarRing = () => (
       <div
         className="absolute w-px h-6 origin-bottom"
         style={{
-          background: "linear-gradient(to top, rgba(0,229,255,0.8), transparent)",
+          background: theme === "dark" ? "linear-gradient(to top, rgba(0,229,255,0.8), transparent)" : "linear-gradient(to top, rgba(2,132,199,0.9), transparent)",
           transformOrigin: "bottom center",
           bottom: "50%",
           left: "50%",
@@ -154,8 +154,8 @@ const SonarRing = () => (
       <div
         className="w-1.5 h-1.5 rounded-full"
         style={{
-          background: "#00e5ff",
-          boxShadow: "0 0 8px rgba(0,229,255,1)",
+          background: theme === "dark" ? "#00e5ff" : "#0284c7",
+          boxShadow: theme === "dark" ? "0 0 8px rgba(0,229,255,1)" : "0 0 8px rgba(2,132,199,0.8)",
         }}
       />
     </div>
@@ -163,7 +163,7 @@ const SonarRing = () => (
 );
 
 // Depth meter on the left
-const DepthMeter = () => {
+const DepthMeter = ({ theme }: { theme: "dark" | "light" }) => {
   const [depth, setDepth] = useState(247);
   useEffect(() => {
     const id = setInterval(() => {
@@ -177,13 +177,13 @@ const DepthMeter = () => {
       className="absolute left-3 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-1 pointer-events-none"
       style={{ opacity: 0.6 }}
     >
-      <div className="w-px h-10 rounded-full" style={{ background: "linear-gradient(to bottom, transparent, rgba(0,200,255,0.6))" }} />
+      <div className="w-px h-10 rounded-full" style={{ background: theme === "dark" ? "linear-gradient(to bottom, transparent, rgba(0,200,255,0.6))" : "linear-gradient(to bottom, transparent, rgba(2,132,199,0.6))" }} />
       <div
         className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded"
         style={{
-          color: "rgba(0,229,255,0.8)",
-          background: "rgba(0,20,50,0.5)",
-          border: "1px solid rgba(0,180,255,0.2)",
+          color: theme === "dark" ? "rgba(0,229,255,0.8)" : "#0284c7",
+          background: theme === "dark" ? "rgba(0,20,50,0.5)" : "rgba(255,255,255,0.85)",
+          border: theme === "dark" ? "1px solid rgba(0,180,255,0.2)" : "1px solid rgba(2,132,199,0.3)",
           writingMode: "vertical-rl",
           textOrientation: "mixed",
           letterSpacing: "0.15em",
@@ -191,7 +191,7 @@ const DepthMeter = () => {
       >
         {depth}m
       </div>
-      <div className="w-px h-10 rounded-full" style={{ background: "linear-gradient(to top, transparent, rgba(0,200,255,0.6))" }} />
+      <div className="w-px h-10 rounded-full" style={{ background: theme === "dark" ? "linear-gradient(to top, transparent, rgba(0,200,255,0.6))" : "linear-gradient(to top, transparent, rgba(2,132,199,0.6))" }} />
     </div>
   );
 };
@@ -361,9 +361,9 @@ const Home = () => {
       <div
         className="min-h-[280px] sm:min-h-[320px] lg:h-[330px] w-full rounded-2xl sm:rounded-[28px] relative overflow-hidden group flex flex-col justify-between"
         style={{
-          background: theme === "dark" ? "linear-gradient(135deg, #020813 0%, #041224 45%, #061c38 100%)" : "linear-gradient(135deg, #031e3d 0%, #053366 45%, #07478d 100%)",
-          border: theme === "dark" ? "1px solid rgba(0, 180, 255, 0.2)" : "1px solid rgba(0, 140, 240, 0.35)",
-          boxShadow: theme === "dark" ? "0 0 60px rgba(0, 100, 180, 0.22), inset 0 1px 0 rgba(0, 229, 255, 0.12)" : "0 10px 35px rgba(0, 80, 180, 0.15), inset 0 1px 0 rgba(0, 229, 255, 0.2)",
+          background: theme === "dark" ? "linear-gradient(135deg, #020813 0%, #041224 45%, #061c38 100%)" : "linear-gradient(135deg, #ffffff 0%, #f0f7fe 40%, #e0f2fe 80%, #dbeafe 100%)",
+          border: theme === "dark" ? "1px solid rgba(0, 180, 255, 0.2)" : "1px solid rgba(2, 132, 199, 0.2)",
+          boxShadow: theme === "dark" ? "0 0 60px rgba(0, 100, 180, 0.22), inset 0 1px 0 rgba(0, 229, 255, 0.12)" : "0 10px 40px rgba(2, 132, 199, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)",
         }}
       >
         {/* Radial ambient lighting */}
@@ -371,7 +371,7 @@ const Home = () => {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse at 70% 0%, rgba(0, 229, 255, 0.16) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(2, 132, 199, 0.25) 0%, transparent 55%)",
+              theme === "dark" ? "radial-gradient(ellipse at 70% 0%, rgba(0, 229, 255, 0.16) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(2, 132, 199, 0.25) 0%, transparent 55%)" : "radial-gradient(ellipse at 70% 0%, rgba(2, 132, 199, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(0, 229, 255, 0.1) 0%, transparent 55%)",
           }}
         />
 
@@ -380,21 +380,21 @@ const Home = () => {
           className="absolute inset-0 opacity-25 pointer-events-none"
           style={{
             backgroundImage:
-              "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(0, 180, 255, 0.05) 70px, rgba(0, 180, 255, 0.05) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(0, 180, 255, 0.04) 100px, rgba(0, 180, 255, 0.04) 101px)",
+              theme === "dark" ? "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(0, 180, 255, 0.05) 70px, rgba(0, 180, 255, 0.05) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(0, 180, 255, 0.04) 100px, rgba(0, 180, 255, 0.04) 101px)" : "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(2, 132, 199, 0.04) 70px, rgba(2, 132, 199, 0.04) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(2, 132, 199, 0.03) 100px, rgba(2, 132, 199, 0.03) 101px)",
           }}
         />
 
-        <Scanlines />
-        <OceanWaves />
+        {theme === "dark" && <Scanlines />}
+        <OceanWaves theme={theme} />
         <Bubbles />
-        <SonarRing />
-        <DepthMeter />
+        <SonarRing theme={theme} />
+        <DepthMeter theme={theme} />
 
         {/* Bottom backdrop gradient */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: "linear-gradient(to top, rgba(2, 8, 19, 0.85) 0%, transparent 60%)",
+            background: theme === "dark" ? "linear-gradient(to top, rgba(2, 8, 19, 0.85) 0%, transparent 60%)" : "linear-gradient(to top, rgba(255, 255, 255, 0.6) 0%, transparent 60%)",
           }}
         />
 
@@ -403,15 +403,15 @@ const Home = () => {
           {/* Top Header Row: Greeting & Live Status Badge */}
           <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3">
-              <div className="size-9 sm:size-10 rounded-xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(0,229,255,0.25)] flex-shrink-0">
+              <div className="size-9 sm:size-10 rounded-xl dark:bg-cyan-950/80 bg-white dark:border-cyan-500/30 border-cyan-200 flex items-center justify-center dark:text-cyan-300 text-cyan-600 shadow-sm dark:shadow-[0_0_15px_rgba(0,229,255,0.25)] flex-shrink-0">
                 <Sparkles className="size-4 sm:size-5 animate-pulse" />
               </div>
               <div>
-                <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase font-bold block">
+                <span className="text-[10px] font-mono tracking-widest dark:text-cyan-400 text-cyan-600 uppercase font-bold block">
                   ◈ COLLABCLASS OS
                 </span>
-                <h2 className="text-xs sm:text-sm font-semibold text-slate-200">
-                  {greeting}, <span className="text-white font-bold">{user?.firstName || "Scholar"}</span>
+                <h2 className="text-xs sm:text-sm font-semibold dark:text-slate-200 text-slate-700">
+                  {greeting}, <span className="dark:text-white text-slate-900 font-bold">{user?.firstName || "Scholar"}</span>
                 </h2>
               </div>
             </div>
@@ -441,23 +441,23 @@ const Home = () => {
             ) : upcomingCalls && upcomingCalls.length > 0 ? (
               <div
                 onClick={() => navigate('/upcoming')}
-                className="cursor-pointer rounded-xl sm:rounded-2xl py-1.5 px-3 sm:py-2 sm:px-4 backdrop-blur-xl border border-cyan-500/30 bg-[#001830]/80 shadow-[0_0_16px_rgba(0,229,255,0.2)] hover:scale-105 transition-all flex items-center gap-2.5"
+                className="cursor-pointer rounded-xl sm:rounded-2xl py-1.5 px-3 sm:py-2 sm:px-4 backdrop-blur-xl dark:border-cyan-500/30 border-cyan-200 dark:bg-[#001830]/80 bg-white/90 shadow-sm dark:shadow-[0_0_16px_rgba(0,229,255,0.2)] hover:scale-105 transition-all flex items-center gap-2.5"
               >
                 <div className="size-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(0,229,255,0.8)]" />
                 <div className="flex flex-col text-left">
-                  <span className="text-[9px] sm:text-[10px] font-bold text-cyan-400 uppercase tracking-wider leading-none">
+                  <span className="text-[9px] sm:text-[10px] font-bold dark:text-cyan-400 text-cyan-600 uppercase tracking-wider leading-none">
                     Next Lecture · {getRelativeTime(upcomingCalls[0]?.state?.startsAt)}
                   </span>
-                  <span className="text-[11px] sm:text-xs font-semibold text-slate-100 truncate max-w-[140px] sm:max-w-[180px] mt-0.5">
+                  <span className="text-[11px] sm:text-xs font-semibold dark:text-slate-100 text-slate-800 truncate max-w-[140px] sm:max-w-[180px] mt-0.5">
                     {upcomingCalls[0]?.state?.custom?.heading || "Scheduled Session"}
                   </span>
                 </div>
                 <ArrowRight className="size-3.5 text-cyan-400" />
               </div>
             ) : (
-              <div className="rounded-xl sm:rounded-2xl py-1.5 px-3.5 backdrop-blur-xl border border-cyan-500/20 bg-cyber-surface/70 flex items-center gap-2">
-                <div className="size-1.5 sm:size-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(0,229,255,0.8)]" />
-                <span className="text-[11px] sm:text-xs font-medium text-cyan-200/90">
+              <div className="rounded-xl sm:rounded-2xl py-1.5 px-3.5 backdrop-blur-xl dark:border-cyan-500/20 border-cyan-200/80 dark:bg-cyber-surface/70 bg-white/80 shadow-sm flex items-center gap-2">
+                <div className="size-1.5 sm:size-2 rounded-full dark:bg-cyan-400 bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(2,132,199,0.6)]" />
+                <span className="text-[11px] sm:text-xs font-semibold dark:text-cyan-200/90 text-cyan-800">
                   Node Ready · All Systems Active
                 </span>
               </div>
@@ -471,42 +471,42 @@ const Home = () => {
                 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none"
                 style={{
                   background:
-                    "linear-gradient(135deg, #ffffff 0%, #a5f3fc 35%, #00e5ff 70%, #0284c7 100%)",
+                    theme === "dark" ? "linear-gradient(135deg, #ffffff 0%, #a5f3fc 35%, #00e5ff 70%, #0284c7 100%)" : "linear-gradient(135deg, #0369a1 0%, #0284c7 35%, #0ea5e9 70%, #0369a1 100%)",
                   backgroundSize: "200% auto",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
-                  filter: "drop-shadow(0 0 35px rgba(0, 229, 255, 0.45))",
+                  filter: theme === "dark" ? "drop-shadow(0 0 35px rgba(0, 229, 255, 0.45))" : "drop-shadow(0 4px 15px rgba(2, 132, 199, 0.15))",
                   animation: "shimmerText 5s linear infinite",
                 }}
               >
                 {time}
               </h1>
-              <p className="text-xs sm:text-base font-medium text-cyan-100/80 mt-1 sm:mt-2 tracking-wide">
+              <p className="text-xs sm:text-base font-semibold dark:text-cyan-100/80 text-slate-600 mt-1 sm:mt-2 tracking-wide">
                 {date}
               </p>
             </div>
 
             {/* Quick Personal Room Pill */}
             {user && (
-              <div className="flex items-center gap-2 bg-cyber-elevated/90 border border-cyan-500/25 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 backdrop-blur-md shadow-lg max-w-full sm:max-w-sm">
-                <div className="size-7 sm:size-8 rounded-lg sm:rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 flex-shrink-0">
+              <div className="flex items-center gap-2 dark:bg-cyber-elevated/90 bg-white/95 dark:border-cyan-500/25 border-cyan-200 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 backdrop-blur-md shadow-sm max-w-full sm:max-w-sm">
+                <div className="size-7 sm:size-8 rounded-lg sm:rounded-xl dark:bg-cyan-500/10 bg-cyan-50 dark:border-cyan-500/30 border-cyan-200 flex items-center justify-center dark:text-cyan-300 text-cyan-600 flex-shrink-0">
                   <KeyRound className="size-3.5 sm:size-4" />
                 </div>
                 <div className="flex flex-col min-w-0 pr-1 flex-1">
-                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider dark:text-cyan-400 text-cyan-700">
                     Personal Classroom Link
                   </span>
-                  <span className="text-[11px] sm:text-xs font-mono text-slate-300 truncate">
+                  <span className="text-[11px] sm:text-xs font-mono dark:text-slate-300 text-slate-800 font-semibold truncate">
                     {user.firstName ? `${user.firstName}'s Room` : "My Room"}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={copyPersonalRoomLink}
-                  className="px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-200 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 flex-shrink-0"
+                  className="px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl dark:bg-cyan-500/20 bg-cyan-100 dark:hover:bg-cyan-500/30 hover:bg-cyan-200 dark:border-cyan-500/40 border-cyan-300 dark:text-cyan-200 text-cyan-800 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 flex-shrink-0 cursor-pointer"
                 >
-                  {isCopiedPersonal ? <Check className="size-3 text-cyan-300" /> : <Copy className="size-3" />}
+                  {isCopiedPersonal ? <Check className="size-3 dark:text-cyan-300 text-cyan-700" /> : <Copy className="size-3" />}
                   <span>{isCopiedPersonal ? "Copied" : "Copy"}</span>
                 </button>
               </div>
