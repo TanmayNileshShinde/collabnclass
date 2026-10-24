@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import dotenv from "dotenv";
 import express from "express";
 import Groq from "groq-sdk";
+import { verifyToken } from "@clerk/clerk-sdk-node";
 
 dotenv.config();
 
@@ -17,9 +18,67 @@ const getGroqClient = (): Groq | null => {
   return groqClient;
 };
 
-// Chat endpoint
+// In-memory sliding window rate limiter: 20 requests per minute per identifier
+const requestTimestamps = new Map<string, number[]>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 seconds
+const MAX_REQUESTS_PER_WINDOW = 20; // 20 requests per minute
+
+const checkRateLimit = (key: string): { allowed: boolean; retryAfter?: number } => {
+  const now = Date.now();
+  const timestamps = (requestTimestamps.get(key) || []).filter(
+    (time) => now - time < RATE_LIMIT_WINDOW_MS
+  );
+
+  if (timestamps.length >= MAX_REQUESTS_PER_WINDOW) {
+    const oldest = timestamps[0];
+    const retryAfter = Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000);
+    return { allowed: false, retryAfter: Math.max(1, retryAfter) };
+  }
+
+  timestamps.push(now);
+  requestTimestamps.set(key, timestamps);
+  return { allowed: true };
+};
+
+// Chat endpoint with authentication & rate limiting
 router.post("/chatbot", async (req: Request, res: Response) => {
   try {
+    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+    const authHeader = req.headers.authorization;
+    let userId: string | null = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      if (clerkSecretKey && token) {
+        try {
+          const decoded = await verifyToken(token, { secretKey: clerkSecretKey });
+          if (decoded && decoded.sub) {
+            userId = decoded.sub;
+          }
+        } catch (authErr) {
+          return res.status(401).json({
+            error: "Invalid or expired authorization token. Please sign in again.",
+          });
+        }
+      }
+    } else if (clerkSecretKey) {
+      // If CLERK_SECRET_KEY is configured on server, require auth
+      return res.status(401).json({
+        error: "Authentication required to use AI Study Assistant.",
+      });
+    }
+
+    // Rate limit by verified userId or client IP
+    const rateLimitKey = userId || req.ip || req.socket.remoteAddress || "anonymous";
+    const rateCheck = checkRateLimit(rateLimitKey);
+
+    if (!rateCheck.allowed) {
+      res.setHeader("Retry-After", String(rateCheck.retryAfter || 60));
+      return res.status(429).json({
+        error: `Rate limit exceeded. Please wait ${rateCheck.retryAfter} seconds before sending another message.`,
+      });
+    }
+
     const { message, conversationHistory = [] } = req.body;
 
     if (!message || typeof message !== "string" || !message.trim()) {
