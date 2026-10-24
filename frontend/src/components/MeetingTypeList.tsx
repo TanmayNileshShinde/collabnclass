@@ -25,9 +25,9 @@ const initialValues = {
 
 // Ocean Cyberpunk input/textarea classes
 const oceanInput =
-  "dark:border dark:border-[rgba(0,180,255,0.2)] border border-slate-300 dark:bg-[rgba(2,8,19,0.7)] bg-white dark:text-[rgba(240,249,255,0.95)] text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-0 transition-all duration-200 rounded-xl backdrop-blur-md";
+  "dark:border dark:border-[rgba(0,180,255,0.2)] border border-slate-300 dark:bg-[rgba(2,8,19,0.7)] bg-white dark:text-[rgba(240,249,255,0.95)] text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-0 transition-all duration-300 rounded-xl backdrop-blur-md";
 
-const oceanLabel = "text-sm font-semibold tracking-wide dark:text-cyan-200 text-slate-700";
+const oceanLabel = "text-sm font-semibold tracking-wide dark:text-cyan-200 text-slate-700 transition-colors duration-300";
 
 interface MeetingTypeListProps {
   onJoinClick?: () => void;
