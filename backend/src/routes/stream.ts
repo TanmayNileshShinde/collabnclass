@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { verifyToken } from "@clerk/clerk-sdk-node";
 import { StreamClient } from "@stream-io/node-sdk";
+import axios from "axios";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -111,9 +112,28 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
     const client = getStreamClient();
     if (client) {
       try {
-        // Stream video recording deletion via client
+        // Stream video recording deletion via client or REST API
         if (typeof (client as any).deleteRecording === "function") {
           await (client as any).deleteRecording(decodedRecordingId);
+        } else if (typeof (client as any).video?.deleteRecording === "function") {
+          await (client as any).video.deleteRecording(decodedRecordingId);
+        } else if (process.env.STREAM_API_KEY && process.env.STREAM_SECRET_KEY) {
+          const serverToken = client.createToken("admin");
+          await axios.delete(
+            `https://video.stream-io-api.com/api/v2/video/recordings/${encodeURIComponent(decodedRecordingId)}`,
+            {
+              headers: {
+                "Stream-Auth-Type": "jwt",
+                Authorization: serverToken,
+                "api-key": process.env.STREAM_API_KEY,
+              },
+              params: {
+                api_key: process.env.STREAM_API_KEY,
+              },
+            }
+          ).catch((err) => {
+            console.warn("Stream REST API delete warning:", err?.response?.data || err.message);
+          });
         }
       } catch (streamErr) {
         console.warn("Stream recording deletion warning:", streamErr);
