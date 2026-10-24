@@ -108,7 +108,7 @@ const HomeCard = ({
 
         <div
           className={cn(
-            'size-9 rounded-full border flex items-center justify-center opacity-75 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200',
+            'size-9 rounded-full border flex items-center justify-center opacity-75 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300',
             config.arrowColor
           )}
         >
@@ -128,10 +128,10 @@ const HomeCard = ({
             {badge}
           </span>
         )}
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight dark:text-white text-slate-800 dark:group-hover:text-cyan-200 group-hover:text-cyan-600 transition-colors duration-200">
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight dark:text-white text-slate-800 dark:group-hover:text-cyan-200 group-hover:text-cyan-600 transition-colors duration-300">
           {title}
         </h2>
-        <p className="text-xs sm:text-sm font-medium dark:text-slate-400 text-slate-600 dark:group-hover:text-slate-200 group-hover:text-slate-900 transition-colors duration-200 line-clamp-2 leading-relaxed">
+        <p className="text-xs sm:text-sm font-medium dark:text-slate-400 text-slate-600 dark:group-hover:text-slate-200 group-hover:text-slate-900 transition-colors duration-300 line-clamp-2 leading-relaxed">
           {description}
         </p>
       </div>

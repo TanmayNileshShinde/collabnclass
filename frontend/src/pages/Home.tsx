@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useUser } from "@clerk/clerk-react";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import MeetingTypeList from "@/components/MeetingTypeList";
@@ -28,11 +27,12 @@ import {
   ClipboardPaste
 } from "lucide-react";
 
-// Animated SVG wave layer
-const OceanWaves = ({ theme }: { theme: "dark" | "light" }) => (
+// Animated SVG wave layer with dual-theme smooth crossfade
+const OceanWaves = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    {/* Dark Theme Waves */}
     <svg
-      className="absolute bottom-0 left-0 w-full"
+      className="absolute bottom-0 left-0 w-full transition-opacity duration-300 dark:opacity-100 opacity-0"
       viewBox="0 0 1440 120"
       preserveAspectRatio="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -40,12 +40,32 @@ const OceanWaves = ({ theme }: { theme: "dark" | "light" }) => (
     >
       <path
         d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
-        fill={theme === "dark" ? "rgba(0, 100, 180, 0.07)" : "rgba(2, 132, 199, 0.08)"}
+        fill="rgba(0, 100, 180, 0.07)"
         style={{ animation: "waveMove 8s ease-in-out infinite" }}
       />
       <path
         d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
-        fill={theme === "dark" ? "rgba(0, 150, 220, 0.05)" : "rgba(14, 165, 233, 0.06)"}
+        fill="rgba(0, 150, 220, 0.05)"
+        style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
+      />
+    </svg>
+
+    {/* Light Theme Waves */}
+    <svg
+      className="absolute bottom-0 left-0 w-full transition-opacity duration-300 dark:opacity-0 opacity-100"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ height: "100px" }}
+    >
+      <path
+        d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
+        fill="rgba(2, 132, 199, 0.08)"
+        style={{ animation: "waveMove 8s ease-in-out infinite" }}
+      />
+      <path
+        d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
+        fill="rgba(14, 165, 233, 0.06)"
         style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
       />
     </svg>
@@ -104,10 +124,10 @@ const Bubbles = () => {
   );
 };
 
-// Scanline overlay for depth
+// Scanline overlay for depth with smooth opacity fade
 const Scanlines = () => (
   <div
-    className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.03]"
+    className="absolute inset-0 pointer-events-none overflow-hidden transition-opacity duration-300 dark:opacity-[0.03] opacity-0"
     style={{
       backgroundImage:
         "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,200,255,1) 2px, rgba(0,200,255,1) 3px)",
@@ -116,16 +136,12 @@ const Scanlines = () => (
   />
 );
 
-// Depth sonar ring
-const SonarRing = ({ theme }: { theme: "dark" | "light" }) => (
-  <div className="absolute right-8 lg:right-14 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block opacity-35">
+// Depth sonar ring with synchronized dual layer crossfade
+const SonarRing = () => (
+  <div className="absolute right-8 lg:right-14 top-1/2 -translate-y-1/2 pointer-events-none hidden lg:block opacity-35 w-16 h-16">
+    {/* Dark Theme Sonar */}
     <div
-      className="w-16 h-16 rounded-full border flex items-center justify-center relative"
-      style={{
-        borderColor: theme === "dark" ? "rgba(0,180,255,0.2)" : "rgba(2,132,199,0.3)",
-        background: theme === "dark" ? "rgba(0,20,50,0.4)" : "rgba(255,255,255,0.7)",
-        backdropFilter: "blur(4px)",
-      }}
+      className="absolute inset-0 w-16 h-16 rounded-full border border-[rgba(0,180,255,0.2)] bg-[rgba(0,20,50,0.4)] backdrop-blur-[4px] flex items-center justify-center transition-opacity duration-300 dark:opacity-100 opacity-0"
     >
       {[12, 8, 4].map((size, i) => (
         <div
@@ -134,16 +150,15 @@ const SonarRing = ({ theme }: { theme: "dark" | "light" }) => (
           style={{
             width: size * 4,
             height: size * 4,
-            borderColor: theme === "dark" ? `rgba(0,200,255,${0.15 + i * 0.08})` : `rgba(2,132,199,${0.2 + i * 0.1})`,
+            borderColor: `rgba(0,200,255,${0.15 + i * 0.08})`,
             animation: `depthPulse ${3 + i}s ease-in-out infinite`,
             animationDelay: `${i * 0.8}s`,
           }}
         />
       ))}
       <div
-        className="absolute w-px h-6 origin-bottom"
+        className="absolute w-px h-6 origin-bottom bg-gradient-to-t from-[rgba(0,229,255,0.8)] to-transparent"
         style={{
-          background: theme === "dark" ? "linear-gradient(to top, rgba(0,229,255,0.8), transparent)" : "linear-gradient(to top, rgba(2,132,199,0.9), transparent)",
           transformOrigin: "bottom center",
           bottom: "50%",
           left: "50%",
@@ -152,18 +167,46 @@ const SonarRing = ({ theme }: { theme: "dark" | "light" }) => (
         }}
       />
       <div
-        className="w-1.5 h-1.5 rounded-full"
+        className="w-1.5 h-1.5 rounded-full bg-[#00e5ff] shadow-[0_0_8px_rgba(0,229,255,1)]"
+      />
+    </div>
+
+    {/* Light Theme Sonar */}
+    <div
+      className="absolute inset-0 w-16 h-16 rounded-full border border-[rgba(2,132,199,0.3)] bg-white/70 backdrop-blur-[4px] flex items-center justify-center transition-opacity duration-300 dark:opacity-0 opacity-100"
+    >
+      {[12, 8, 4].map((size, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full border"
+          style={{
+            width: size * 4,
+            height: size * 4,
+            borderColor: `rgba(2,132,199,${0.2 + i * 0.1})`,
+            animation: `depthPulse ${3 + i}s ease-in-out infinite`,
+            animationDelay: `${i * 0.8}s`,
+          }}
+        />
+      ))}
+      <div
+        className="absolute w-px h-6 origin-bottom bg-gradient-to-t from-[rgba(2,132,199,0.9)] to-transparent"
         style={{
-          background: theme === "dark" ? "#00e5ff" : "#0284c7",
-          boxShadow: theme === "dark" ? "0 0 8px rgba(0,229,255,1)" : "0 0 8px rgba(2,132,199,0.8)",
+          transformOrigin: "bottom center",
+          bottom: "50%",
+          left: "50%",
+          marginLeft: "-0.5px",
+          animation: "spin 4s linear infinite",
         }}
+      />
+      <div
+        className="w-1.5 h-1.5 rounded-full bg-[#0284c7] shadow-[0_0_8px_rgba(2,132,199,0.8)]"
       />
     </div>
   </div>
 );
 
-// Depth meter on the left
-const DepthMeter = ({ theme }: { theme: "dark" | "light" }) => {
+// Depth meter on the left with smooth transitions
+const DepthMeter = () => {
   const [depth, setDepth] = useState(247);
   useEffect(() => {
     const id = setInterval(() => {
@@ -174,16 +217,13 @@ const DepthMeter = ({ theme }: { theme: "dark" | "light" }) => {
 
   return (
     <div
-      className="absolute left-3 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-1 pointer-events-none"
+      className="absolute left-3 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-1 pointer-events-none transition-opacity duration-300"
       style={{ opacity: 0.6 }}
     >
-      <div className="w-px h-10 rounded-full" style={{ background: theme === "dark" ? "linear-gradient(to bottom, transparent, rgba(0,200,255,0.6))" : "linear-gradient(to bottom, transparent, rgba(2,132,199,0.6))" }} />
+      <div className="w-px h-10 rounded-full transition-all duration-300 dark:bg-gradient-to-b dark:from-transparent dark:to-[rgba(0,200,255,0.6)] bg-gradient-to-b from-transparent to-[rgba(2,132,199,0.6)]" />
       <div
-        className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded"
+        className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded transition-all duration-300 dark:text-[rgba(0,229,255,0.8)] text-[#0284c7] dark:bg-[rgba(0,20,50,0.5)] bg-white/85 dark:border-[rgba(0,180,255,0.2)] border-[rgba(2,132,199,0.3)] border"
         style={{
-          color: theme === "dark" ? "rgba(0,229,255,0.8)" : "#0284c7",
-          background: theme === "dark" ? "rgba(0,20,50,0.5)" : "rgba(255,255,255,0.85)",
-          border: theme === "dark" ? "1px solid rgba(0,180,255,0.2)" : "1px solid rgba(2,132,199,0.3)",
           writingMode: "vertical-rl",
           textOrientation: "mixed",
           letterSpacing: "0.15em",
@@ -191,14 +231,13 @@ const DepthMeter = ({ theme }: { theme: "dark" | "light" }) => {
       >
         {depth}m
       </div>
-      <div className="w-px h-10 rounded-full" style={{ background: theme === "dark" ? "linear-gradient(to top, transparent, rgba(0,200,255,0.6))" : "linear-gradient(to top, transparent, rgba(2,132,199,0.6))" }} />
+      <div className="w-px h-10 rounded-full transition-all duration-300 dark:bg-gradient-to-t dark:from-transparent dark:to-[rgba(0,200,255,0.6)] bg-gradient-to-t from-transparent to-[rgba(2,132,199,0.6)]" />
     </div>
   );
 };
 
 const Home = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
   const { user } = useUser();
   const client = useStreamVideoClient();
   const { toast } = useToast();
@@ -379,20 +418,27 @@ const Home = () => {
           }}
         />
 
-        {/* Cyber grid overlay */}
+        {/* Cyber grid overlay crossfade */}
         <div
-          className="absolute inset-0 opacity-25 pointer-events-none"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 dark:opacity-25 opacity-0"
           style={{
             backgroundImage:
-              theme === "dark" ? "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(0, 180, 255, 0.05) 70px, rgba(0, 180, 255, 0.05) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(0, 180, 255, 0.04) 100px, rgba(0, 180, 255, 0.04) 101px)" : "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(2, 132, 199, 0.04) 70px, rgba(2, 132, 199, 0.04) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(2, 132, 199, 0.03) 100px, rgba(2, 132, 199, 0.03) 101px)",
+              "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(0, 180, 255, 0.05) 70px, rgba(0, 180, 255, 0.05) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(0, 180, 255, 0.04) 100px, rgba(0, 180, 255, 0.04) 101px)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 dark:opacity-0 opacity-25"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(0deg, transparent, transparent 70px, rgba(2, 132, 199, 0.04) 70px, rgba(2, 132, 199, 0.04) 71px), repeating-linear-gradient(90deg, transparent, transparent 100px, rgba(2, 132, 199, 0.03) 100px, rgba(2, 132, 199, 0.03) 101px)",
           }}
         />
 
-        {theme === "dark" && <Scanlines />}
-        <OceanWaves theme={theme} />
+        <Scanlines />
+        <OceanWaves />
         <Bubbles />
-        <SonarRing theme={theme} />
-        <DepthMeter theme={theme} />
+        <SonarRing />
+        <DepthMeter />
 
         {/* Bottom backdrop gradient crossfade */}
         <div
@@ -413,15 +459,15 @@ const Home = () => {
           {/* Top Header Row: Greeting & Live Status Badge */}
           <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3">
-              <div className="size-9 sm:size-10 rounded-xl dark:bg-cyan-950/80 bg-white dark:border-cyan-500/30 border-cyan-200 flex items-center justify-center dark:text-cyan-300 text-cyan-600 shadow-sm dark:shadow-[0_0_15px_rgba(0,229,255,0.25)] flex-shrink-0">
+              <div className="size-9 sm:size-10 rounded-xl dark:bg-cyan-950/80 bg-white dark:border-cyan-500/30 border-cyan-200 flex items-center justify-center dark:text-cyan-300 text-cyan-600 shadow-sm dark:shadow-[0_0_15px_rgba(0,229,255,0.25)] flex-shrink-0 transition-all duration-300">
                 <Sparkles className="size-4 sm:size-5 animate-pulse" />
               </div>
               <div>
-                <span className="text-[10px] font-mono tracking-widest dark:text-cyan-400 text-cyan-600 uppercase font-bold block">
+                <span className="text-[10px] font-mono tracking-widest dark:text-cyan-400 text-cyan-600 uppercase font-bold block transition-colors duration-300">
                   ◈ COLLABCLASS OS
                 </span>
-                <h2 className="text-xs sm:text-sm font-semibold dark:text-slate-200 text-slate-700">
-                  {greeting}, <span className="dark:text-white text-slate-900 font-bold">{user?.firstName || "Scholar"}</span>
+                <h2 className="text-xs sm:text-sm font-semibold dark:text-slate-200 text-slate-700 transition-colors duration-300">
+                  {greeting}, <span className="dark:text-white text-slate-900 font-bold transition-colors duration-300">{user?.firstName || "Scholar"}</span>
                 </h2>
               </div>
             </div>
@@ -430,7 +476,7 @@ const Home = () => {
             {liveCalls && liveCalls.length > 0 ? (
               <div
                 onClick={() => navigate(`/meeting/${liveCalls[0].id}`)}
-                className="cursor-pointer rounded-xl sm:rounded-2xl py-1.5 px-3 sm:py-2 sm:px-4 text-center backdrop-blur-xl border border-rose-500/60 bg-rose-950/80 shadow-[0_0_20px_rgba(244,63,94,0.4)] hover:scale-105 transition-all flex items-center gap-2.5 group/live"
+                className="cursor-pointer rounded-xl sm:rounded-2xl py-1.5 px-3 sm:py-2 sm:px-4 text-center backdrop-blur-xl border border-rose-500/60 bg-rose-950/80 shadow-[0_0_20px_rgba(244,63,94,0.4)] hover:scale-105 transition-all duration-300 flex items-center gap-2.5 group/live"
               >
                 <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
@@ -444,30 +490,30 @@ const Home = () => {
                     {liveCalls[0]?.state?.custom?.heading || liveCalls[0]?.state?.custom?.description || "In Session"}
                   </span>
                 </div>
-                <span className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl bg-rose-500 group-hover/live:bg-rose-400 text-white shadow-md transition-colors flex items-center gap-1">
+                <span className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg sm:rounded-xl bg-rose-500 group-hover/live:bg-rose-400 text-white shadow-md transition-colors duration-300 flex items-center gap-1">
                   Enter →
                 </span>
               </div>
             ) : upcomingCalls && upcomingCalls.length > 0 ? (
               <div
                 onClick={() => navigate('/upcoming')}
-                className="cursor-pointer rounded-xl sm:rounded-2xl py-1.5 px-3 sm:py-2 sm:px-4 backdrop-blur-xl dark:border-cyan-500/30 border-cyan-200 dark:bg-[#001830]/80 bg-white/90 shadow-sm dark:shadow-[0_0_16px_rgba(0,229,255,0.2)] hover:scale-105 transition-all flex items-center gap-2.5"
+                className="cursor-pointer rounded-xl sm:rounded-2xl py-1.5 px-3 sm:py-2 sm:px-4 backdrop-blur-xl dark:border-cyan-500/30 border-cyan-200 dark:bg-[#001830]/80 bg-white/90 shadow-sm dark:shadow-[0_0_16px_rgba(0,229,255,0.2)] hover:scale-105 transition-all duration-300 flex items-center gap-2.5"
               >
                 <div className="size-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(0,229,255,0.8)]" />
                 <div className="flex flex-col text-left">
-                  <span className="text-[9px] sm:text-[10px] font-bold dark:text-cyan-400 text-cyan-600 uppercase tracking-wider leading-none">
+                  <span className="text-[9px] sm:text-[10px] font-bold dark:text-cyan-400 text-cyan-600 uppercase tracking-wider leading-none transition-colors duration-300">
                     Next Lecture · {getRelativeTime(upcomingCalls[0]?.state?.startsAt)}
                   </span>
-                  <span className="text-[11px] sm:text-xs font-semibold dark:text-slate-100 text-slate-800 truncate max-w-[140px] sm:max-w-[180px] mt-0.5">
+                  <span className="text-[11px] sm:text-xs font-semibold dark:text-slate-100 text-slate-800 truncate max-w-[140px] sm:max-w-[180px] mt-0.5 transition-colors duration-300">
                     {upcomingCalls[0]?.state?.custom?.heading || "Scheduled Session"}
                   </span>
                 </div>
                 <ArrowRight className="size-3.5 text-cyan-400" />
               </div>
             ) : (
-              <div className="rounded-xl sm:rounded-2xl py-1.5 px-3.5 backdrop-blur-xl dark:border-cyan-500/20 border-cyan-200/80 dark:bg-cyber-surface/70 bg-white/80 shadow-sm flex items-center gap-2">
+              <div className="rounded-xl sm:rounded-2xl py-1.5 px-3.5 backdrop-blur-xl dark:border-cyan-500/20 border-cyan-200/80 dark:bg-cyber-surface/70 bg-white/80 shadow-sm flex items-center gap-2 transition-all duration-300">
                 <div className="size-1.5 sm:size-2 rounded-full dark:bg-cyan-400 bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(2,132,199,0.6)]" />
-                <span className="text-[11px] sm:text-xs font-semibold dark:text-cyan-200/90 text-cyan-800">
+                <span className="text-[11px] sm:text-xs font-semibold dark:text-cyan-200/90 text-cyan-800 transition-colors duration-300">
                   Node Ready · All Systems Active
                 </span>
               </div>
@@ -477,36 +523,44 @@ const Home = () => {
           {/* Bottom Hero Info: Big Clock, Date & Quick Personal Link */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-auto">
             <div className="flex flex-col">
-              <h1
-                className={`hero-clock-text text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none ${
-                  theme === "dark" ? "hero-clock-dark" : "hero-clock-light"
-                }`}
-              >
-                {time}
-              </h1>
-              <p className="text-xs sm:text-base font-semibold dark:text-cyan-100/80 text-slate-600 mt-1 sm:mt-2 tracking-wide">
+              <div className="relative inline-block leading-none">
+                {/* Dark Theme Clock Layer */}
+                <h1
+                  className="hero-clock-text hero-clock-dark text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none transition-opacity duration-300 dark:opacity-100 opacity-0"
+                >
+                  {time}
+                </h1>
+                {/* Light Theme Clock Layer */}
+                <h1
+                  aria-hidden="true"
+                  className="hero-clock-text hero-clock-light text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none absolute inset-0 transition-opacity duration-300 dark:opacity-0 opacity-100 pointer-events-none"
+                >
+                  {time}
+                </h1>
+              </div>
+              <p className="text-xs sm:text-base font-semibold dark:text-cyan-100/80 text-slate-600 mt-1 sm:mt-2 tracking-wide transition-colors duration-300">
                 {date}
               </p>
             </div>
 
             {/* Quick Personal Room Pill */}
             {user && (
-              <div className="flex items-center gap-2 dark:bg-cyber-elevated/90 bg-white/95 dark:border-cyan-500/25 border-cyan-200 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 backdrop-blur-md shadow-sm max-w-full sm:max-w-sm">
-                <div className="size-7 sm:size-8 rounded-lg sm:rounded-xl dark:bg-cyan-500/10 bg-cyan-50 dark:border-cyan-500/30 border-cyan-200 flex items-center justify-center dark:text-cyan-300 text-cyan-600 flex-shrink-0">
+              <div className="flex items-center gap-2 dark:bg-cyber-elevated/90 bg-white/95 dark:border-cyan-500/25 border-cyan-200 rounded-xl sm:rounded-2xl p-2 sm:p-2.5 backdrop-blur-md shadow-sm max-w-full sm:max-w-sm transition-all duration-300">
+                <div className="size-7 sm:size-8 rounded-lg sm:rounded-xl dark:bg-cyan-500/10 bg-cyan-50 dark:border-cyan-500/30 border-cyan-200 flex items-center justify-center dark:text-cyan-300 text-cyan-600 flex-shrink-0 transition-colors duration-300">
                   <KeyRound className="size-3.5 sm:size-4" />
                 </div>
                 <div className="flex flex-col min-w-0 pr-1 flex-1">
-                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider dark:text-cyan-400 text-cyan-700">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider dark:text-cyan-400 text-cyan-700 transition-colors duration-300">
                     Personal Classroom Link
                   </span>
-                  <span className="text-[11px] sm:text-xs font-mono dark:text-slate-300 text-slate-800 font-semibold truncate">
+                  <span className="text-[11px] sm:text-xs font-mono dark:text-slate-300 text-slate-800 font-semibold truncate transition-colors duration-300">
                     {user.firstName ? `${user.firstName}'s Room` : "My Room"}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={copyPersonalRoomLink}
-                  className="px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl dark:bg-cyan-500/20 bg-cyan-100 dark:hover:bg-cyan-500/30 hover:bg-cyan-200 dark:border-cyan-500/40 border-cyan-300 dark:text-cyan-200 text-cyan-800 text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 flex-shrink-0 cursor-pointer"
+                  className="px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl dark:bg-cyan-500/20 bg-cyan-100 dark:hover:bg-cyan-500/30 hover:bg-cyan-200 dark:border-cyan-500/40 border-cyan-300 dark:text-cyan-200 text-cyan-800 text-xs font-semibold flex items-center gap-1 transition-all duration-300 active:scale-95 flex-shrink-0 cursor-pointer"
                 >
                   {isCopiedPersonal ? <Check className="size-3 dark:text-cyan-300 text-cyan-700" /> : <Copy className="size-3" />}
                   <span>{isCopiedPersonal ? "Copied" : "Copy"}</span>
@@ -521,11 +575,11 @@ const Home = () => {
       <div className="relative z-20">
         <form
           onSubmit={handleQuickJoin}
-          className="glass-cyber-panel rounded-2xl p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 border border-cyan-500/30 shadow-neon-cyan/20"
+          className="glass-cyber-panel rounded-2xl p-2.5 sm:p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 border border-cyan-500/30 shadow-neon-cyan/20 transition-all duration-300"
         >
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl dark:bg-cyber-surface/90 bg-cyan-50 dark:border-cyan-500/20 border-cyan-200 self-start sm:self-auto">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl dark:bg-cyber-surface/90 bg-cyan-50 dark:border-cyan-500/20 border-cyan-200 self-start sm:self-auto transition-colors duration-300">
             <Zap className="size-4 text-cyan-400 animate-pulse" />
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider dark:text-cyan-300 text-cyan-700 whitespace-nowrap">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider dark:text-cyan-300 text-cyan-700 whitespace-nowrap transition-colors duration-300">
               Quick Join
             </span>
           </div>
@@ -541,7 +595,7 @@ const Home = () => {
             <button
               type="button"
               onClick={handlePasteClipboard}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg dark:bg-cyan-500/10 bg-cyan-50 dark:hover:bg-cyan-500/20 hover:bg-cyan-100 text-[11px] font-medium dark:text-cyan-300 text-cyan-700 dark:border-cyan-500/30 border-cyan-200 transition-colors flex items-center gap-1 cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg dark:bg-cyan-500/10 bg-cyan-50 dark:hover:bg-cyan-500/20 hover:bg-cyan-100 text-[11px] font-medium dark:text-cyan-300 text-cyan-700 dark:border-cyan-500/30 border-cyan-200 transition-colors duration-300 flex items-center gap-1 cursor-pointer"
             >
               <ClipboardPaste className="size-3" />
               <span>Paste</span>
@@ -551,7 +605,7 @@ const Home = () => {
           <Button
             type="submit"
             disabled={isJoining}
-            className="btn-cyber-primary w-full sm:w-auto px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg h-10 sm:h-11 text-xs sm:text-sm"
+            className="btn-cyber-primary w-full sm:w-auto px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg h-10 sm:h-11 text-xs sm:text-sm transition-all duration-300"
           >
             {isJoining ? (
               <span>Connecting...</span>
@@ -568,15 +622,15 @@ const Home = () => {
       {/* ===================== METRICS HUD DOCK ===================== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Stat 1 */}
-        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15">
+        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15 transition-all duration-300">
           <div className="size-10 sm:size-11 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 flex-shrink-0">
             <Radio className="size-4 sm:size-5 animate-pulse" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors">
+            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors duration-300">
               {liveCalls?.length ?? 0}
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 flex items-center gap-1.5 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 flex items-center gap-1.5 truncate transition-colors duration-300">
               <span className="size-1.5 rounded-full bg-rose-500 animate-ping inline-block flex-shrink-0" />
               Live In Session
             </div>
@@ -584,45 +638,45 @@ const Home = () => {
         </div>
 
         {/* Stat 2 */}
-        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15">
+        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15 transition-all duration-300">
           <div className="size-10 sm:size-11 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0">
             <Calendar className="size-4 sm:size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors">
+            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors duration-300">
               {upcomingCalls?.length ?? 0}
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate transition-colors duration-300">
               Upcoming Classes
             </div>
           </div>
         </div>
 
         {/* Stat 3 */}
-        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15">
+        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15 transition-all duration-300">
           <div className="size-10 sm:size-11 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 flex-shrink-0">
             <Video className="size-4 sm:size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors">
+            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors duration-300">
               {endedCalls?.length ?? 0}
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate transition-colors duration-300">
               Completed Classes
             </div>
           </div>
         </div>
 
         {/* Stat 4 */}
-        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15">
+        <div className="glass-cyber-card rounded-xl sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3 border border-cyan-500/15 transition-all duration-300">
           <div className="size-10 sm:size-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
             <Activity className="size-4 sm:size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold dark:text-emerald-300 text-emerald-600 truncate transition-colors">
+            <div className="text-xs sm:text-sm font-bold dark:text-emerald-300 text-emerald-600 truncate transition-colors duration-300">
               Stream WebRTC
             </div>
-            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
+            <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate transition-colors duration-300">
               P2P Low Latency
             </div>
           </div>
@@ -634,11 +688,11 @@ const Home = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#00e5ff] flex-shrink-0" />
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight dark:text-white text-slate-900 transition-colors">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight dark:text-white text-slate-900 transition-colors duration-300">
               Classroom Operations
             </h2>
           </div>
-          <span className="text-xs dark:text-slate-400 text-slate-600 font-medium hidden sm:inline transition-colors">
+          <span className="text-xs dark:text-slate-400 text-slate-600 font-medium hidden sm:inline transition-colors duration-300">
             Quick Actions & Session Controls
           </span>
         </div>
@@ -646,16 +700,16 @@ const Home = () => {
       </div>
 
       {/* ===================== LIVE & TODAY'S SCHEDULE DISPATCH ===================== */}
-      <div className="glass-cyber-panel rounded-2xl sm:rounded-3xl p-5 sm:p-7 dark:border-cyan-500/20 border-slate-200">
+      <div className="glass-cyber-panel rounded-2xl sm:rounded-3xl p-5 sm:p-7 dark:border-cyan-500/20 border-slate-200 transition-all duration-300">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5 sm:mb-6">
           <div>
             <div className="flex items-center gap-2.5">
               <span className="size-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#00e5ff] flex-shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight dark:text-white text-slate-900 transition-colors">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight dark:text-white text-slate-900 transition-colors duration-300">
                 Classroom Dispatch
               </h2>
             </div>
-            <p className="text-xs sm:text-sm dark:text-slate-400 text-slate-600 mt-1 transition-colors">
+            <p className="text-xs sm:text-sm dark:text-slate-400 text-slate-600 mt-1 transition-colors duration-300">
               Active live sessions and scheduled upcoming lectures
             </p>
           </div>
@@ -664,7 +718,7 @@ const Home = () => {
             variant="outline"
             size="sm"
             onClick={() => navigate('/upcoming')}
-            className="btn-cyber-ghost text-xs rounded-xl flex items-center gap-1.5"
+            className="btn-cyber-ghost text-xs rounded-xl flex items-center gap-1.5 transition-all duration-300"
           >
             <span>View Full Calendar</span>
             <ExternalLink className="size-3.5" />
@@ -683,7 +737,7 @@ const Home = () => {
               return (
                 <div
                   key={call.id}
-                  className="rounded-2xl p-5 sm:p-6 dark:bg-gradient-to-r dark:from-rose-950/40 dark:via-[#04162e] dark:to-[#020e20] bg-gradient-to-r from-rose-50 via-white to-sky-50 dark:border-rose-500/50 border border-rose-300 shadow-sm dark:shadow-[0_0_35px_rgba(244,63,94,0.2)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all"
+                  className="rounded-2xl p-5 sm:p-6 dark:bg-gradient-to-r dark:from-rose-950/40 dark:via-[#04162e] dark:to-[#020e20] bg-gradient-to-r from-rose-50 via-white to-sky-50 dark:border-rose-500/50 border border-rose-300 shadow-sm dark:shadow-[0_0_35px_rgba(244,63,94,0.2)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300"
                 >
                   <div className="flex items-start gap-4">
                     <div className="size-12 rounded-2xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.3)] flex-shrink-0">
@@ -701,10 +755,10 @@ const Home = () => {
                           </span>
                         )}
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate transition-colors">
+                      <h3 className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate transition-colors duration-300">
                         {meetingTitle}
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">
+                      <p className="text-xs dark:text-slate-400 text-slate-500 mt-1 line-clamp-1 transition-colors duration-300">
                         {call.state.custom?.subheading || "Active virtual lecture. Interactive whiteboard, audio & screen share enabled."}
                       </p>
                     </div>
@@ -717,7 +771,7 @@ const Home = () => {
                         navigator.clipboard.writeText(meetingUrl);
                         toast({ title: "Class Link Copied!" });
                       }}
-                      className="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-cyan-300 hover:text-cyan-700 flex items-center gap-1 px-3 py-2 rounded-xl dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 transition-colors"
+                      className="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-cyan-300 hover:text-cyan-700 flex items-center gap-1 px-3 py-2 rounded-xl dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 transition-colors duration-300"
                     >
                       <Copy className="size-3.5" />
                       <span>Copy Link</span>
@@ -725,7 +779,7 @@ const Home = () => {
 
                     <Button
                       onClick={() => navigate(`/meeting/${call.id}`)}
-                      className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm px-5 py-2 rounded-xl shadow-lg flex items-center gap-1.5"
+                      className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs sm:text-sm px-5 py-2 rounded-xl shadow-lg flex items-center gap-1.5 transition-all duration-300"
                     >
                       <span>Join Live Class</span>
                       <ArrowRight className="size-4" />
@@ -746,7 +800,7 @@ const Home = () => {
                   return (
                     <div
                       key={call.id}
-                      className="rounded-2xl p-4 sm:p-5 dark:bg-cyber-elevated/70 bg-white dark:border-cyan-500/20 border-slate-200 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all shadow-sm"
+                      className="rounded-2xl p-4 sm:p-5 dark:bg-cyber-elevated/70 bg-white dark:border-cyan-500/20 border-slate-200 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all duration-300 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
@@ -761,10 +815,10 @@ const Home = () => {
                       </div>
 
                       <div>
-                        <h4 className="text-base font-bold dark:text-white text-slate-900 truncate">
+                        <h4 className="text-base font-bold dark:text-white text-slate-900 truncate transition-colors duration-300">
                           {meetingTitle}
                         </h4>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs dark:text-slate-400 text-slate-500 mt-1 transition-colors duration-300">
                           {startsAt
                             ? startsAt.toLocaleDateString([], { month: "short", day: "numeric" }) + " · " + startsAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                             : "Scheduled"}
@@ -779,7 +833,7 @@ const Home = () => {
                         <Button
                           size="sm"
                           onClick={() => navigate(`/meeting/${call.id}`)}
-                          className="btn-cyber-primary text-xs px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1"
+                          className="btn-cyber-primary text-xs px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1 transition-all duration-300"
                         >
                           <span>Enter</span>
                           <ArrowRight className="size-3.5" />
@@ -802,7 +856,7 @@ const Home = () => {
               return (
                 <div
                   key={call.id}
-                  className="rounded-2xl p-4 sm:p-5 dark:bg-cyber-elevated/70 bg-white dark:border-cyan-500/20 border-slate-200 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all shadow-sm"
+                  className="rounded-2xl p-4 sm:p-5 dark:bg-cyber-elevated/70 bg-white dark:border-cyan-500/20 border-slate-200 flex flex-col justify-between gap-3 hover:-translate-y-1 transition-all duration-300 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
@@ -817,10 +871,10 @@ const Home = () => {
                   </div>
 
                   <div>
-                    <h4 className="text-base font-bold dark:text-white text-slate-900 truncate">
+                    <h4 className="text-base font-bold dark:text-white text-slate-900 truncate transition-colors duration-300">
                       {meetingTitle}
                     </h4>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs dark:text-slate-400 text-slate-500 mt-1 transition-colors duration-300">
                       {startsAt
                         ? startsAt.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + " · " + startsAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                         : "Time Pending"}
@@ -834,7 +888,7 @@ const Home = () => {
                         navigator.clipboard.writeText(meetingUrl);
                         toast({ title: "Class Link Copied!" });
                       }}
-                      className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                      className="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-cyan-300 hover:text-cyan-700 flex items-center gap-1 transition-colors duration-300"
                     >
                       <Copy className="size-3.5" />
                       <span>Copy Link</span>
@@ -843,7 +897,7 @@ const Home = () => {
                     <Button
                       size="sm"
                       onClick={() => navigate(`/meeting/${call.id}`)}
-                      className="btn-cyber-primary text-xs px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1"
+                      className="btn-cyber-primary text-xs px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-1 transition-all duration-300"
                     >
                       <span>Start Early</span>
                       <ArrowRight className="size-3.5" />
@@ -855,19 +909,19 @@ const Home = () => {
           </div>
         ) : (
           /* Empty state */
-          <div className="text-center py-10 sm:py-12 px-4 sm:px-6 rounded-2xl dark:bg-cyber-surface/40 bg-white dark:border-cyan-500/10 border-slate-200 flex flex-col items-center justify-center shadow-sm">
-            <div className="size-14 sm:size-16 rounded-2xl sm:rounded-3xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 shadow-[0_0_25px_rgba(0,229,255,0.2)]">
+          <div className="text-center py-10 sm:py-12 px-4 sm:px-6 rounded-2xl dark:bg-cyber-surface/40 bg-white dark:border-cyan-500/10 border-slate-200 flex flex-col items-center justify-center shadow-sm transition-all duration-300">
+            <div className="size-14 sm:size-16 rounded-2xl sm:rounded-3xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 shadow-[0_0_25px_rgba(0,229,255,0.2)] transition-all duration-300">
               <Calendar className="size-7 sm:size-8" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 mb-1">
+            <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 mb-1 transition-colors duration-300">
               No Classroom Sessions Right Now
             </h3>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-md mb-4 text-center">
+            <p className="text-xs sm:text-sm dark:text-slate-400 text-slate-500 max-w-md mb-4 text-center transition-colors duration-300">
               You are all caught up! Launch an instant lecture for spontaneous office hours or schedule an upcoming module with your students.
             </p>
             <Button
               onClick={() => navigate("/upcoming")}
-              className="btn-cyber-ghost text-xs px-4 py-2 rounded-xl"
+              className="btn-cyber-ghost text-xs px-4 py-2 rounded-xl transition-all duration-300"
             >
               View Full Calendar
             </Button>
@@ -886,18 +940,18 @@ const Home = () => {
               navigate("/home");
             }
           }}
-          className="glass-cyber-card rounded-2xl p-5 sm:p-6 border border-cyan-500/20 cursor-pointer group hover:-translate-y-1 transition-all"
+          className="glass-cyber-card rounded-2xl p-5 sm:p-6 border border-cyan-500/20 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
         >
-          <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 mb-3.5 group-hover:scale-110 transition-transform">
+          <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 mb-3.5 group-hover:scale-110 transition-transform duration-300">
             <PenTool className="size-5 sm:size-6" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-cyan-200 group-hover:text-cyan-600 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-cyan-200 group-hover:text-cyan-600 transition-colors duration-300">
             Collaborative Whiteboard
           </h3>
-          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors">
+          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors duration-300">
             Real-time drawing canvas, sticky notes, architectural diagrams, and math formula rendering for interactive classes.
           </p>
-          <div className="mt-4 flex items-center text-xs font-semibold text-cyan-400 gap-1 group-hover:translate-x-1 transition-transform">
+          <div className="mt-4 flex items-center text-xs font-semibold text-cyan-400 gap-1 group-hover:translate-x-1 transition-transform duration-300">
             <span>Launch Canvas</span>
             <ArrowRight className="size-3.5" />
           </div>
@@ -905,15 +959,15 @@ const Home = () => {
 
         {/* Tool 2: AI Study Copilot */}
         <div
-          className="glass-cyber-card rounded-2xl p-5 sm:p-6 border border-blue-500/20 group hover:-translate-y-1 transition-all"
+          className="glass-cyber-card rounded-2xl p-5 sm:p-6 border border-blue-500/20 group hover:-translate-y-1 transition-all duration-300"
         >
-          <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-300 mb-3.5 group-hover:scale-110 transition-transform">
+          <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-300 mb-3.5 group-hover:scale-110 transition-transform duration-300">
             <Bot className="size-5 sm:size-6" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-blue-200 group-hover:text-blue-600 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-blue-200 group-hover:text-blue-600 transition-colors duration-300">
             AI Study Copilot
           </h3>
-          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors">
+          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors duration-300">
             Generate lecture summaries, 3-question quizzes, code explanations, and flashcards directly during or after live class.
           </p>
           <div className="mt-4 flex items-center text-xs font-semibold text-sky-400 gap-1">
@@ -925,18 +979,18 @@ const Home = () => {
         {/* Tool 3: Host Privileges & Attendance */}
         <div
           onClick={() => navigate('/recordings')}
-          className="glass-cyber-card rounded-2xl p-5 sm:p-6 border border-purple-500/20 cursor-pointer group hover:-translate-y-1 transition-all"
+          className="glass-cyber-card rounded-2xl p-5 sm:p-6 border border-purple-500/20 cursor-pointer group hover:-translate-y-1 transition-all duration-300"
         >
-          <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 mb-3.5 group-hover:scale-110 transition-transform">
+          <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 mb-3.5 group-hover:scale-110 transition-transform duration-300">
             <ShieldCheck className="size-5 sm:size-6" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-purple-200 group-hover:text-purple-600 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-purple-200 group-hover:text-purple-600 transition-colors duration-300">
             Attendance & Cloud Vault
           </h3>
-          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors">
+          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors duration-300">
             Automated student join/leave logs, downloadable CSV reports, and high-definition recordings of every lecture.
           </p>
-          <div className="mt-4 flex items-center text-xs font-semibold text-purple-400 gap-1 group-hover:translate-x-1 transition-transform">
+          <div className="mt-4 flex items-center text-xs font-semibold text-purple-400 gap-1 group-hover:translate-x-1 transition-transform duration-300">
             <span>Explore Archives</span>
             <ArrowRight className="size-3.5" />
           </div>
