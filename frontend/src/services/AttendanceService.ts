@@ -87,6 +87,53 @@ class AttendanceService {
     }
   }
 
+  // Record leave on tab closure / page unload with keepalive or beacon
+  static recordLeaveBeacon(meetingId: string, userId: string) {
+    try {
+      if (!isSupabaseConfigured) return false;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !supabaseAnonKey) return false;
+
+      const endpoint = `${supabaseUrl}/rest/v1/meeting_attendance?meeting_id=eq.${encodeURIComponent(
+        meetingId
+      )}&user_id=eq.${encodeURIComponent(userId)}&left_at=is.null`;
+
+      const payload = JSON.stringify({
+        left_at: new Date().toISOString(),
+      });
+
+      // 1. Try keepalive fetch (guaranteed by browser even after page unload)
+      if (typeof fetch === 'function') {
+        fetch(endpoint, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+            Prefer: 'return=minimal',
+          },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+        return true;
+      }
+
+      // 2. Fallback to navigator.sendBeacon
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(endpoint, blob);
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      console.warn('Beacon leave recording failed:', e);
+      return false;
+    }
+  }
+
   // Get attendance records for a specific meeting
   static async getMeetingAttendance(meetingId: string) {
     try {

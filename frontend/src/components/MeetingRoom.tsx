@@ -92,25 +92,32 @@ const MeetingRoomContent = () => {
     }
 
     // Set up leave tracking when component unmounts or user leaves
-    const handleLeave = () => {
+    const handleLeave = (isUnload = false) => {
       if (meetingId && userId) {
-        AttendanceService.recordLeave(meetingId, userId).catch((error) => {
-          console.error("Failed to record attendance leave:", error);
-        });
+        if (isUnload) {
+          // Use keepalive / beacon on page unload to ensure request is never aborted
+          AttendanceService.recordLeaveBeacon(meetingId, userId);
+        } else {
+          AttendanceService.recordLeave(meetingId, userId).catch((error) => {
+            console.error("Failed to record attendance leave:", error);
+          });
+        }
       }
     };
 
     // Listen for page unload (user closes browser/navigates away)
     const handleBeforeUnload = () => {
-      handleLeave();
+      handleLeave(true);
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
 
     // Cleanup on unmount
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      handleLeave();
+      window.removeEventListener("pagehide", handleBeforeUnload);
+      handleLeave(false);
     };
   }, [call, user, callingState]);
 
