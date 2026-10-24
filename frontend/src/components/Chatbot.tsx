@@ -1,3 +1,4 @@
+import { useAuth } from "@clerk/clerk-react";
 import { useState, useRef, useEffect } from "react";
 import {
   Send,
@@ -70,6 +71,7 @@ const INITIAL_MESSAGE: ChatbotMessage = {
 };
 
 const Chatbot = ({ embedded = false }: ChatbotProps) => {
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<ChatbotMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -110,12 +112,14 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
     setIsLoading(true);
 
     try {
+      const token = await getToken();
       const response = await fetch(
         `${import.meta.env.VITE_BE_URL}/api/chatbot`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             message: textToSend,
@@ -126,6 +130,15 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
           }),
         }
       );
+
+      if (response.status === 429) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Rate limit reached. Please wait before asking again.");
+      }
+
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please sign in to use the AI Study Assistant.");
+      }
 
       if (!response.ok) {
         throw new Error("Failed to send message");

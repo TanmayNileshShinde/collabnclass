@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useCall } from '@stream-io/video-react-sdk';
 import { useAuth } from '@clerk/clerk-react';
-import { Github, X, Folder, File, ChevronRight, ChevronDown, Link, Loader2 } from 'lucide-react';
+import { Github, X, Folder, File, ChevronRight, ChevronDown, Link, Loader2, Download, FileCode } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
@@ -83,13 +83,36 @@ const highlightCode = async (code: string, filePath: string): Promise<string> =>
   }
 };
 
+// Binary file detection helpers
+const isImageFile = (filePath: string): boolean => {
+  const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+  return ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif'].includes(ext);
+};
+
+const isBinaryFile = (filePath: string): boolean => {
+  const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+  const binaryExtensions = [
+    'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp', 'avif',
+    'pdf', 'zip', 'tar', 'gz', '7z', 'rar',
+    'exe', 'dll', 'so', 'dylib', 'bin', 'iso',
+    'wasm', 'woff', 'woff2', 'ttf', 'eot', 'otf',
+    'mp3', 'wav', 'ogg', 'mp4', 'mov', 'webm', 'mkv',
+    'db', 'sqlite', 'sqlite3', 'class', 'pyc', 'lockb'
+  ];
+  return binaryExtensions.includes(ext);
+};
+
 // Shared file viewer used in both host and non-host panels
 const FileViewer = ({
   selectedFilePath,
+  selectedFileUrl,
+  fileViewMode,
   highlightedHtml,
   isFileLoading,
 }: {
   selectedFilePath: string | null;
+  selectedFileUrl: string | null;
+  fileViewMode: 'code' | 'image' | 'binary';
   highlightedHtml: string | null;
   isFileLoading: boolean;
 }) => {
@@ -101,12 +124,55 @@ const FileViewer = ({
         <span className="text-xs font-medium text-neutral-300 truncate">
           {selectedFilePath}
         </span>
+        {selectedFileUrl && (
+          <a
+            href={selectedFileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 shrink-0 ml-2"
+          >
+            <Download className="w-3 h-3" />
+            <span>Raw</span>
+          </a>
+        )}
       </div>
       <div className="flex-1 overflow-auto rounded-xl bg-[#08121f] border border-[rgba(0,180,255,0.14)] p-3 text-xs font-mono no-scrollbar">
         {isFileLoading ? (
           <div className="flex items-center gap-2 text-cyan-300 p-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Loading file…</span>
+          </div>
+        ) : fileViewMode === 'image' && selectedFileUrl ? (
+          <div className="flex flex-col items-center justify-center p-4 min-h-[180px]">
+            <img
+              src={selectedFileUrl}
+              alt={selectedFilePath}
+              className="max-h-60 max-w-full rounded-lg object-contain shadow-md border border-cyan-500/20 bg-black/40"
+            />
+            <p className="mt-2 text-[11px] text-neutral-400 font-sans">
+              Image preview · {selectedFilePath.split('.').pop()?.toUpperCase()}
+            </p>
+          </div>
+        ) : fileViewMode === 'binary' && selectedFileUrl ? (
+          <div className="flex flex-col items-center justify-center py-6 px-4 text-center font-sans">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-3">
+              <FileCode className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-semibold text-white mb-1">{selectedFilePath.split('/').pop()}</p>
+            <p className="text-xs text-neutral-400 max-w-[240px] mb-4">
+              Binary or non-text asset cannot be highlighted in code viewer.
+            </p>
+            <a
+              href={selectedFileUrl}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download File</span>
+            </a>
           </div>
         ) : highlightedHtml ? (
           <div
@@ -132,6 +198,8 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
   const [fileTree, setFileTree] = useState<GitHubFileItem[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
+  const [fileViewMode, setFileViewMode] = useState<'code' | 'image' | 'binary'>('code');
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
 
@@ -248,15 +316,34 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
     try {
       setIsFileLoading(true);
       setSelectedFilePath(item.path);
+      setSelectedFileUrl(item.download_url);
       setHighlightedHtml(null);
+
+      if (isImageFile(item.path)) {
+        setFileViewMode('image');
+        return;
+      }
+
+      if (isBinaryFile(item.path)) {
+        setFileViewMode('binary');
+        return;
+      }
+
+      setFileViewMode('code');
 
       const response = await fetch(item.download_url);
       if (!response.ok) throw new Error('Failed to fetch file content');
       const text = await response.text();
 
-      // Highlight with Shiki
-      const html = await highlightCode(text, item.path);
-      setHighlightedHtml(html);
+      // Guard against gigantic files (>500KB) locking up the browser
+      if (text.length > 500000) {
+        const truncated = text.substring(0, 500000) + '\n\n// --- File truncated for performance (exceeds 500KB) ---';
+        const html = await highlightCode(truncated, item.path);
+        setHighlightedHtml(html);
+      } else {
+        const html = await highlightCode(text, item.path);
+        setHighlightedHtml(html);
+      }
     } catch (error: any) {
       toast({ title: 'Failed to load file', description: error.message || 'Unable to load file content', variant: 'destructive' });
     } finally {
@@ -339,6 +426,8 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       </div>
       <FileViewer
         selectedFilePath={selectedFilePath}
+        selectedFileUrl={selectedFileUrl}
+        fileViewMode={fileViewMode}
         highlightedHtml={highlightedHtml}
         isFileLoading={isFileLoading}
       />
