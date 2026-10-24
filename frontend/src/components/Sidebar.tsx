@@ -20,44 +20,33 @@ const Sidebar = () => {
     <>
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="fixed left-4 top-24 z-50 max-sm:hidden lg:hidden p-3 rounded-full transition-all duration-200"
-        style={{
-          background: theme === 'dark' ? 'rgba(0,20,50,0.85)' : 'rgba(255,255,255,0.9)',
-          border: theme === 'dark' ? '1px solid rgba(0,180,255,0.2)' : '1px solid rgba(0,140,240,0.25)',
-          boxShadow: theme === 'dark' ? '0 0 16px rgba(0,100,200,0.2)' : '0 2px 10px rgba(0,80,180,0.1)',
-          color: theme === 'dark' ? 'rgba(180,225,255,0.9)' : '#0284c7',
-        }}
+        className="fixed left-4 top-24 z-50 max-sm:hidden lg:hidden p-3 rounded-full transition-all duration-300 dark:bg-[rgba(0,20,50,0.85)] bg-white/95 border dark:border-cyan-500/20 border-cyan-500/25 dark:shadow-[0_0_16px_rgba(0,100,200,0.2)] shadow-[0_2px_10px_rgba(0,80,180,0.1)] dark:text-cyan-200 text-sky-600"
       >
         {isCollapsed ? <Menu size={20} /> : <X size={20} />}
       </button>
 
       <section
         className={cn(
-          "sticky left-0 top-0 flex h-screen flex-shrink-0 flex-col justify-between p-6 pt-28 transition-all duration-300 ease-in-out max-sm:hidden lg:flex",
+          "sticky left-0 top-0 flex h-screen flex-shrink-0 flex-col justify-between p-6 pt-28 transition-all duration-300 ease-in-out max-sm:hidden lg:flex relative overflow-hidden dark:bg-[#020e1d] bg-white border-r dark:border-cyan-500/10 border-cyan-500/15 dark:shadow-[4px_0_24px_rgba(0,40,100,0.2)] shadow-[4px_0_20px_rgba(0,60,140,0.06)]",
           isCollapsed ? "w-20" : "w-64",
           isCollapsed && "max-sm:w-20"
         )}
-        style={{
-          background: theme === 'dark'
-            ? 'linear-gradient(180deg, #020f1f 0%, #041a30 60%, #020d1a 100%)'
-            : 'linear-gradient(180deg, #ffffff 0%, #f4f9ff 60%, #eaf3fd 100%)',
-          borderRight: theme === 'dark' ? '1px solid rgba(0,180,255,0.08)' : '1px solid rgba(0,140,240,0.14)',
-          boxShadow: theme === 'dark'
-            ? '4px 0 24px rgba(0,40,100,0.2), inset -1px 0 0 rgba(0,180,255,0.05)'
-            : '4px 0 20px rgba(0,60,140,0.06), inset -1px 0 0 rgba(0,140,240,0.08)',
-        }}
       >
-        {/* Top edge glow */}
+        {/* Smooth background gradient crossfade layers */}
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-b from-white via-[#f4f9ff] to-[#eaf3fd] dark:opacity-0 opacity-100" />
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-b from-[#020f1f] via-[#041a30] to-[#020d1a] dark:opacity-100 opacity-0" />
+
+        {/* Right edge glow */}
         <div
-          className="absolute inset-y-0 right-0 w-px pointer-events-none"
-          style={{
-            background: theme === 'dark'
-              ? 'linear-gradient(180deg, transparent, rgba(0,150,255,0.15), transparent)'
-              : 'linear-gradient(180deg, transparent, rgba(2,132,199,0.2), transparent)',
-          }}
+          className="absolute inset-y-0 right-0 w-px pointer-events-none transition-opacity duration-300 dark:opacity-100 opacity-0"
+          style={{ background: 'linear-gradient(180deg, transparent, rgba(0,150,255,0.15), transparent)' }}
+        />
+        <div
+          className="absolute inset-y-0 right-0 w-px pointer-events-none transition-opacity duration-300 dark:opacity-0 opacity-100"
+          style={{ background: 'linear-gradient(180deg, transparent, rgba(2,132,199,0.2), transparent)' }}
         />
 
-        <div className="flex flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2 relative z-10">
           {sidebarLinks.map((item) => {
             const isActive = location.pathname === item.route || location.pathname.startsWith(`${item.route}/`);
 

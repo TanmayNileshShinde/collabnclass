@@ -359,19 +359,23 @@ const Home = () => {
     <section className="w-full flex flex-col gap-6 sm:gap-8 lg:gap-10 dark:text-white text-slate-900 transition-all duration-300 max-w-7xl mx-auto px-2 sm:px-0">
       {/* ===================== HERO CYBER BANNER ===================== */}
       <div
-        className="min-h-[280px] sm:min-h-[320px] lg:h-[330px] w-full rounded-2xl sm:rounded-[28px] relative overflow-hidden group flex flex-col justify-between"
-        style={{
-          background: theme === "dark" ? "linear-gradient(135deg, #020813 0%, #041224 45%, #061c38 100%)" : "linear-gradient(135deg, #ffffff 0%, #f0f7fe 40%, #e0f2fe 80%, #dbeafe 100%)",
-          border: theme === "dark" ? "1px solid rgba(0, 180, 255, 0.2)" : "1px solid rgba(2, 132, 199, 0.2)",
-          boxShadow: theme === "dark" ? "0 0 60px rgba(0, 100, 180, 0.22), inset 0 1px 0 rgba(0, 229, 255, 0.12)" : "0 10px 40px rgba(2, 132, 199, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)",
-        }}
+        className="min-h-[280px] sm:min-h-[320px] lg:h-[330px] w-full rounded-2xl sm:rounded-[28px] relative overflow-hidden group flex flex-col justify-between transition-all duration-300 dark:border-cyan-500/20 border-cyan-200/80 border dark:shadow-[0_0_60px_rgba(0,100,180,0.22)] shadow-[0_10px_40px_rgba(2,132,199,0.08)]"
       >
-        {/* Radial ambient lighting */}
+        {/* Smooth background crossfade layers */}
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-br from-white via-[#f0f7fe] to-[#e0f2fe] dark:opacity-0 opacity-100" />
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-br from-[#020813] via-[#041224] to-[#061c38] dark:opacity-100 opacity-0" />
+
+        {/* Radial ambient lighting crossfade */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 dark:opacity-100 opacity-0"
           style={{
-            background:
-              theme === "dark" ? "radial-gradient(ellipse at 70% 0%, rgba(0, 229, 255, 0.16) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(2, 132, 199, 0.25) 0%, transparent 55%)" : "radial-gradient(ellipse at 70% 0%, rgba(2, 132, 199, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(0, 229, 255, 0.1) 0%, transparent 55%)",
+            background: "radial-gradient(ellipse at 70% 0%, rgba(0, 229, 255, 0.16) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(2, 132, 199, 0.25) 0%, transparent 55%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 dark:opacity-0 opacity-100"
+          style={{
+            background: "radial-gradient(ellipse at 70% 0%, rgba(2, 132, 199, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(0, 229, 255, 0.1) 0%, transparent 55%)",
           }}
         />
 
@@ -390,11 +394,17 @@ const Home = () => {
         <SonarRing theme={theme} />
         <DepthMeter theme={theme} />
 
-        {/* Bottom backdrop gradient */}
+        {/* Bottom backdrop gradient crossfade */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 dark:opacity-100 opacity-0"
           style={{
-            background: theme === "dark" ? "linear-gradient(to top, rgba(2, 8, 19, 0.85) 0%, transparent 60%)" : "linear-gradient(to top, rgba(255, 255, 255, 0.6) 0%, transparent 60%)",
+            background: "linear-gradient(to top, rgba(2, 8, 19, 0.85) 0%, transparent 60%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none transition-opacity duration-300 dark:opacity-0 opacity-100"
+          style={{
+            background: "linear-gradient(to top, rgba(255, 255, 255, 0.6) 0%, transparent 60%)",
           }}
         />
 
@@ -526,12 +536,7 @@ const Home = () => {
               placeholder="Enter 8-character code (e.g. 7X9K-2M4P) or URL..."
               value={quickCode}
               onChange={(e) => setQuickCode(e.target.value)}
-              style={{
-                backgroundColor: theme === "dark" ? "#020813" : "#ffffff",
-                borderColor: theme === "dark" ? "rgba(0, 180, 255, 0.25)" : "rgba(0, 140, 240, 0.3)",
-                color: theme === "dark" ? "#f0f9ff" : "#0f172a",
-              }}
-              className="w-full dark:!bg-[#020813] !bg-white dark:border-cyan-500/25 border-slate-300 dark:text-slate-100 text-slate-900 placeholder:text-slate-400 rounded-xl pr-20 font-mono text-xs sm:text-sm tracking-wide focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40 h-10 sm:h-11 backdrop-blur-md"
+              className="w-full dark:bg-[#020813] bg-white dark:border-cyan-500/25 border-slate-300 dark:text-slate-100 text-slate-900 placeholder:text-slate-400 rounded-xl pr-20 font-mono text-xs sm:text-sm tracking-wide focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/40 h-10 sm:h-11 backdrop-blur-md transition-colors duration-300"
             />
             <button
               type="button"
@@ -568,7 +573,7 @@ const Home = () => {
             <Radio className="size-4 sm:size-5 animate-pulse" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-extrabold text-white">
+            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors">
               {liveCalls?.length ?? 0}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 flex items-center gap-1.5 truncate">
@@ -584,7 +589,7 @@ const Home = () => {
             <Calendar className="size-4 sm:size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-extrabold text-white">
+            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors">
               {upcomingCalls?.length ?? 0}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
@@ -599,7 +604,7 @@ const Home = () => {
             <Video className="size-4 sm:size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xl sm:text-2xl font-extrabold text-white">
+            <div className="text-xl sm:text-2xl font-extrabold dark:text-white text-slate-900 transition-colors">
               {endedCalls?.length ?? 0}
             </div>
             <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
@@ -614,7 +619,7 @@ const Home = () => {
             <Activity className="size-4 sm:size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs sm:text-sm font-bold text-emerald-300 truncate">
+            <div className="text-xs sm:text-sm font-bold dark:text-emerald-300 text-emerald-600 truncate transition-colors">
               Stream WebRTC
             </div>
             <div className="text-[11px] sm:text-xs font-semibold dark:text-slate-400 text-slate-500 truncate">
@@ -629,11 +634,11 @@ const Home = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#00e5ff] flex-shrink-0" />
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight dark:text-white text-slate-900 transition-colors">
               Classroom Operations
             </h2>
           </div>
-          <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+          <span className="text-xs dark:text-slate-400 text-slate-600 font-medium hidden sm:inline transition-colors">
             Quick Actions & Session Controls
           </span>
         </div>
@@ -646,11 +651,11 @@ const Home = () => {
           <div>
             <div className="flex items-center gap-2.5">
               <span className="size-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#00e5ff] flex-shrink-0" />
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight dark:text-white text-slate-900 transition-colors">
                 Classroom Dispatch
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm dark:text-slate-400 text-slate-600 mt-1 transition-colors">
               Active live sessions and scheduled upcoming lectures
             </p>
           </div>
@@ -696,7 +701,7 @@ const Home = () => {
                           </span>
                         )}
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white truncate">
+                      <h3 className="text-lg sm:text-xl font-bold dark:text-white text-slate-900 truncate transition-colors">
                         {meetingTitle}
                       </h3>
                       <p className="text-xs text-slate-400 mt-1 line-clamp-1">
@@ -886,10 +891,10 @@ const Home = () => {
           <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 mb-3.5 group-hover:scale-110 transition-transform">
             <PenTool className="size-5 sm:size-6" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-200 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-cyan-200 group-hover:text-cyan-600 transition-colors">
             Collaborative Whiteboard
           </h3>
-          <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors">
             Real-time drawing canvas, sticky notes, architectural diagrams, and math formula rendering for interactive classes.
           </p>
           <div className="mt-4 flex items-center text-xs font-semibold text-cyan-400 gap-1 group-hover:translate-x-1 transition-transform">
@@ -905,10 +910,10 @@ const Home = () => {
           <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-300 mb-3.5 group-hover:scale-110 transition-transform">
             <Bot className="size-5 sm:size-6" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-blue-200 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-blue-200 group-hover:text-blue-600 transition-colors">
             AI Study Copilot
           </h3>
-          <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors">
             Generate lecture summaries, 3-question quizzes, code explanations, and flashcards directly during or after live class.
           </p>
           <div className="mt-4 flex items-center text-xs font-semibold text-sky-400 gap-1">
@@ -925,10 +930,10 @@ const Home = () => {
           <div className="size-11 sm:size-12 rounded-xl sm:rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 mb-3.5 group-hover:scale-110 transition-transform">
             <ShieldCheck className="size-5 sm:size-6" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-200 transition-colors">
+          <h3 className="text-base sm:text-lg font-bold dark:text-white text-slate-900 dark:group-hover:text-purple-200 group-hover:text-purple-600 transition-colors">
             Attendance & Cloud Vault
           </h3>
-          <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+          <p className="text-xs dark:text-slate-400 text-slate-600 mt-1.5 leading-relaxed transition-colors">
             Automated student join/leave logs, downloadable CSV reports, and high-definition recordings of every lecture.
           </p>
           <div className="mt-4 flex items-center text-xs font-semibold text-purple-400 gap-1 group-hover:translate-x-1 transition-transform">

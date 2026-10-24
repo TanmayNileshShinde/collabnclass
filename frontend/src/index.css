@@ -8,6 +8,10 @@
   box-sizing: border-box;
 }
 
+html, body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 /* ======== Stream.io Video Tile Fixes ======== */
 /* Ensure video tiles maintain size when video is off */
 .str-video__participant-tile,

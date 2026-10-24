@@ -73,6 +73,41 @@ const PersonalRoom = () => {
           --text-muted: rgba(100, 170, 230, 0.6);
         }
 
+        
+        :not(.dark) {
+          --ocean-900: #f8fafc;
+          --ocean-800: #f0f7fe;
+          --ocean-700: #e2e8f0;
+          --ocean-600: #cbd5e1;
+          --ocean-500: #94a3b8;
+          --ocean-400: #0284c7;
+          --blue-glow: rgba(2, 132, 199, 0.12);
+          --blue-mid:  rgba(2, 132, 199, 0.6);
+          --blue-bright: #0284c7;
+          --text-primary: #0f172a;
+          --text-muted: #64748b;
+        }
+
+        :not(.dark) .pr-title {
+          background: linear-gradient(135deg, #091e42 0%, #0284c7 60%, #0369a1 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+
+        :not(.dark) .info-card {
+          background: #ffffff !important;
+          border: 1px solid rgba(2, 132, 199, 0.18) !important;
+          box-shadow: 0 4px 20px rgba(0, 60, 140, 0.06) !important;
+        }
+
+        :not(.dark) .info-card-value {
+          color: #0f172a !important;
+        }
+
+        :not(.dark) .info-card-label {
+          color: #64748b !important;
+        }
+
         .pr-page {
           font-family: 'DM Sans', sans-serif;
           position: relative;
