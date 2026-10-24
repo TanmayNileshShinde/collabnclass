@@ -56,6 +56,22 @@ const Recordings = () => {
           );
         }
 
+        
+        :not(.dark) .rec-page {
+          background: linear-gradient(155deg, #f8fafc 0%, #f0f7fe 55%, #e2e8f0 100%) !important;
+          color: #0f172a !important;
+        }
+
+        :not(.dark) .rec-title {
+          background: linear-gradient(135deg, #091e42 0%, #0284c7 50%, #0369a1 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+
+        :not(.dark) .rec-subtitle {
+          color: #475569 !important;
+        }
+
         .rec-content {
           position: relative;
           z-index: 1;

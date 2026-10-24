@@ -96,24 +96,23 @@ const Navbar = () => {
       `}</style>
 
       <nav
-        className="flex-between fixed z-50 w-full px-4 sm:px-6 py-3.5 lg:px-10 backdrop-blur-xl transition-all duration-300"
-        style={{
-          background: theme === 'dark'
-            ? 'linear-gradient(90deg, rgba(2,11,24,0.95) 0%, rgba(4,22,44,0.95) 50%, rgba(2,13,26,0.95) 100%)'
-            : 'linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(240,248,255,0.95) 50%, rgba(255,255,255,0.95) 100%)',
-          borderBottom: theme === 'dark' ? '1px solid rgba(0,180,255,0.08)' : '1px solid rgba(0,140,240,0.14)',
-          boxShadow: theme === 'dark'
-            ? '0 4px 24px rgba(0,40,100,0.2), inset 0 -1px 0 rgba(0,180,255,0.05)'
-            : '0 4px 20px rgba(0,60,140,0.06), inset 0 -1px 0 rgba(0,140,240,0.08)',
-        }}
+        className="flex-between fixed z-50 w-full px-4 sm:px-6 py-3.5 lg:px-10 backdrop-blur-xl transition-all duration-300 dark:bg-[#020b18]/90 bg-white/90 border-b dark:border-cyan-500/10 border-cyan-500/15 dark:shadow-[0_4px_24px_rgba(0,40,100,0.2)] shadow-[0_4px_20px_rgba(0,60,140,0.06)] relative overflow-hidden"
       >
+        {/* Subtle background gradient overlay with opacity transition */}
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-r from-white via-[#f0f8ff] to-white dark:opacity-0 opacity-90 -z-10" />
+        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-r from-[#020b18] via-[#04162c] to-[#020d1a] dark:opacity-95 opacity-0 -z-10" />
+
         {/* Bottom edge glow */}
         <div
-          className="absolute inset-x-0 bottom-0 h-px pointer-events-none"
+          className="absolute inset-x-0 bottom-0 h-px pointer-events-none transition-opacity duration-300 dark:opacity-100 opacity-0"
           style={{
-            background: theme === 'dark'
-              ? 'linear-gradient(90deg, transparent, rgba(0,160,255,0.2), transparent)'
-              : 'linear-gradient(90deg, transparent, rgba(2,132,199,0.25), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(0,160,255,0.2), transparent)',
+          }}
+        />
+        <div
+          className="absolute inset-x-0 bottom-0 h-px pointer-events-none transition-opacity duration-300 dark:opacity-0 opacity-100"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(2,132,199,0.25), transparent)',
           }}
         />
 
@@ -146,20 +145,7 @@ const Navbar = () => {
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="relative flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300 group border focus:outline-none focus:ring-2 focus:ring-cyan-400/50 cursor-pointer"
-            style={{
-              background: theme === "dark" ? 'rgba(0,20,50,0.7)' : 'rgba(255,255,255,0.95)',
-              borderColor: theme === "dark" ? 'rgba(0,180,255,0.18)' : 'rgba(0,140,240,0.22)',
-              boxShadow: theme === "dark" ? '0 0 12px rgba(0,80,180,0.15)' : '0 2px 8px rgba(0,60,140,0.06)',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = theme === 'dark' ? 'rgba(0,229,255,0.45)' : 'rgba(0,140,240,0.5)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = theme === 'dark' ? '0 0 20px rgba(0,229,255,0.25)' : '0 4px 14px rgba(0,80,180,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = theme === "dark" ? 'rgba(0,180,255,0.18)' : 'rgba(0,140,240,0.22)';
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = theme === "dark" ? '0 0 12px rgba(0,80,180,0.15)' : '0 2px 8px rgba(0,60,140,0.06)';
-            }}
+            className="relative flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-all duration-300 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-400/50 dark:bg-[#001432]/70 bg-white/95 border dark:border-cyan-400/20 border-sky-300/40 dark:shadow-[0_0_12px_rgba(0,80,180,0.15)] shadow-[0_2px_8px_rgba(0,60,140,0.06)] hover:border-cyan-400 dark:hover:border-cyan-400 hover:shadow-[0_4px_14px_rgba(0,80,180,0.15)] dark:hover:shadow-[0_0_20px_rgba(0,229,255,0.25)]"
           >
             {theme === "dark" ? (
               <Sun className="w-5 h-5 text-amber-300 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-110 drop-shadow-[0_0_8px_rgba(252,211,77,0.6)]" />
@@ -170,20 +156,7 @@ const Navbar = () => {
 
           <SignedIn>
             <div
-              className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center transition-all duration-300"
-              style={{
-                background: theme === 'dark' ? 'rgba(0,20,50,0.7)' : 'rgba(255,255,255,0.95)',
-                border: theme === 'dark' ? '1px solid rgba(0,180,255,0.18)' : '1px solid rgba(0,140,240,0.22)',
-                boxShadow: theme === 'dark' ? '0 0 12px rgba(0,80,180,0.15)' : '0 2px 8px rgba(0,60,140,0.06)',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = theme === 'dark' ? 'rgba(0,229,255,0.45)' : 'rgba(0,140,240,0.5)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = theme === 'dark' ? '0 0 20px rgba(0,229,255,0.25)' : '0 4px 14px rgba(0,80,180,0.15)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = theme === 'dark' ? 'rgba(0,180,255,0.18)' : 'rgba(0,140,240,0.22)';
-                (e.currentTarget as HTMLDivElement).style.boxShadow = theme === 'dark' ? '0 0 12px rgba(0,80,180,0.15)' : '0 2px 8px rgba(0,60,140,0.06)';
-              }}
+              className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center transition-all duration-300 dark:bg-[#001432]/70 bg-white/95 border dark:border-cyan-400/20 border-sky-300/40 dark:shadow-[0_0_12px_rgba(0,80,180,0.15)] shadow-[0_2px_8px_rgba(0,60,140,0.06)] hover:border-cyan-400 dark:hover:border-cyan-400 hover:shadow-[0_4px_14px_rgba(0,80,180,0.15)] dark:hover:shadow-[0_0_20px_rgba(0,229,255,0.25)]"
             >
               <UserButton
                 afterSignOutUrl="/landing"

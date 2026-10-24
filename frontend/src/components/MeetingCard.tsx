@@ -60,6 +60,28 @@ const MeetingCard = ({
           transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
 
+        
+        :not(.dark) .meeting-card {
+          background: linear-gradient(145deg, #ffffff 0%, #f8fafc 60%, #f0f7fe 100%) !important;
+          border: 1px solid rgba(0, 140, 240, 0.18) !important;
+          box-shadow: 0 4px 20px rgba(0, 60, 140, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        :not(.dark) .card-title {
+          color: #0f172a !important;
+          text-shadow: none !important;
+        }
+
+        :not(.dark) .card-date {
+          color: #475569 !important;
+        }
+
+        :not(.dark) .btn-ghost {
+          background: rgba(2, 132, 199, 0.08) !important;
+          color: #0284c7 !important;
+          border: 1px solid rgba(2, 132, 199, 0.25) !important;
+        }
+
         .meeting-card::before {
           content: '';
           position: absolute;

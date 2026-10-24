@@ -47,6 +47,22 @@ const Previous = () => {
           z-index: 0;
         }
 
+        
+        :not(.dark) .previous-page {
+          background: linear-gradient(160deg, #f8fafc 0%, #f0f7fe 50%, #e2e8f0 100%) !important;
+          color: #0f172a !important;
+        }
+
+        :not(.dark) .previous-title {
+          background: linear-gradient(135deg, #091e42 0%, #0284c7 50%, #0369a1 100%) !important;
+          -webkit-background-clip: text !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+
+        :not(.dark) .previous-title-sub {
+          color: #475569 !important;
+        }
+
         .previous-content {
           position: relative;
           z-index: 1;
