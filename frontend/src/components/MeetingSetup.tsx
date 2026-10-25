@@ -356,7 +356,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
   );
 
   return (
-    <div className="relative h-screen max-h-screen h-[100dvh] max-h-[100dvh] w-full overflow-hidden transition-colors duration-300 dark:bg-[#020813] bg-slate-50 flex flex-col justify-between p-2 sm:p-3 lg:p-4 select-none">
+    <div className="relative h-screen max-h-screen h-[100dvh] max-h-[100dvh] w-full overflow-hidden transition-colors duration-300 dark:bg-[#020813] bg-slate-50 flex flex-col justify-between p-3 sm:p-5 lg:p-6 xl:p-8 select-none">
       {/* Background Atmosphere */}
       <OceanWaves />
       <Bubbles />
@@ -409,7 +409,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       {/* ========================================================
           SLIM TOP HUD HEADER (Fixed 36-40px, Guaranteed No Overflow)
       ======================================================== */}
-      <header className="relative z-10 w-full max-w-6xl mx-auto flex items-center justify-between gap-2 h-9 sm:h-10 shrink-0">
+      <header className="relative z-10 w-full max-w-7xl 2xl:max-w-[1560px] mx-auto flex items-center justify-between gap-3 h-10 sm:h-11 shrink-0 px-2 sm:px-4">
         {/* Left: Back / Exit */}
         <button
           onClick={() => navigate("/")}
@@ -445,14 +445,14 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       {/* ========================================================
           MAIN VIEWPORT STAGE (Centered & Strictly Fitting Available Height)
       ======================================================== */}
-      <main className="relative z-10 w-full max-w-6xl mx-auto flex-1 min-h-0 flex flex-col justify-center py-1">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 items-center h-full max-h-full">
+      <main className="relative z-10 w-full max-w-7xl 2xl:max-w-[1560px] mx-auto flex-1 min-h-0 flex flex-col justify-center py-2 sm:py-3 lg:py-4 px-2 sm:px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 xl:gap-10 items-center w-full my-auto">
 
           {/* ────────────────────────────────────────────────────────
               LEFT COLUMN: COMPACT CAMERA VIEWFINDER WITH FLOATING DOCK (7 cols)
           ──────────────────────────────────────────────────────── */}
-          <div className="lg:col-span-7 flex flex-col justify-center items-center h-full max-h-full">
-            <div className="relative w-full aspect-video max-h-[50vh] sm:max-h-[54vh] rounded-2xl overflow-hidden border dark:border-cyan-500/35 border-sky-300 shadow-[0_12px_44px_rgba(0,0,0,0.25)] bg-black flex items-center justify-center">
+          <div className="lg:col-span-7 xl:col-span-7 2xl:col-span-7 flex flex-col justify-center items-center w-full">
+            <div className="relative w-full aspect-video max-h-[64vh] sm:max-h-[68vh] lg:max-h-[calc(100dvh-130px)] rounded-3xl overflow-hidden border-2 dark:border-cyan-500/40 border-sky-300 shadow-[0_16px_50px_rgba(0,0,0,0.35)] dark:shadow-[0_0_40px_rgba(0,180,255,0.18)] bg-black flex items-center justify-center">
 
               {/* Viewfinder Top HUD Overlay (Inside Video) */}
               <div className="absolute top-2 inset-x-2.5 flex items-center justify-between pointer-events-none z-20">
@@ -498,7 +498,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
               </div>
 
               {/* Google Meet-Style Floating Control Pill (Overlaid at Bottom Center of Viewport) */}
-              <div className="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-2 z-20 pointer-events-auto">
+              <div className="absolute bottom-3.5 sm:bottom-4 inset-x-0 flex items-center justify-center gap-2.5 z-20 pointer-events-auto">
                 {/* Microphone Toggle Button */}
                 <button
                   onClick={toggleMic}
@@ -641,8 +641,8 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
           {/* ────────────────────────────────────────────────────────
               RIGHT COLUMN: ULTRA-COMPACT BRIEFING & JOIN CARD (5 cols)
           ──────────────────────────────────────────────────────── */}
-          <div className="lg:col-span-5 flex flex-col justify-center">
-            <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5 border transition-all duration-300 dark:bg-gradient-to-br dark:from-[#040e1c]/95 dark:via-[#07162b]/90 dark:to-[#020813]/95 bg-white/95 backdrop-blur-2xl dark:border-[rgba(0,180,255,0.22)] border-sky-200/90 shadow-[0_12px_44px_rgba(0,0,0,0.18)] flex flex-col gap-3">
+          <div className="lg:col-span-5 xl:col-span-5 2xl:col-span-5 flex flex-col justify-center w-full">
+            <div className="relative overflow-hidden rounded-3xl p-5 sm:p-6 lg:p-7 xl:p-8 border transition-all duration-300 dark:bg-gradient-to-br dark:from-[#040e1c]/95 dark:via-[#07162b]/90 dark:to-[#020813]/95 bg-white/95 backdrop-blur-2xl dark:border-[rgba(0,180,255,0.25)] border-sky-200/90 shadow-[0_16px_50px_rgba(0,0,0,0.25)] flex flex-col gap-3.5 sm:gap-4.5">
               <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-75" />
 
               {/* 1. Header Information */}
@@ -652,17 +652,17 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                   <span>Live Stage Setup</span>
                 </div>
 
-                <h2 className="text-xl sm:text-2xl font-extrabold font-syne dark:text-white text-slate-900 tracking-tight leading-snug line-clamp-1">
+                <h2 className="text-2xl sm:text-3xl font-extrabold font-syne dark:text-white text-slate-900 tracking-tight leading-snug">
                   {meetingTitle}
                 </h2>
 
-                <p className="text-[11px] dark:text-neutral-300 text-slate-600 line-clamp-1">
+                <p className="text-xs sm:text-sm dark:text-neutral-300 text-slate-600">
                   Synchronized video room with integrated live chat, code review & whiteboarding.
                 </p>
               </div>
 
               {/* 2. Meeting Code Badge */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl dark:bg-[#030b17]/80 bg-sky-50/80 border dark:border-white/5 border-sky-200/70">
+              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl dark:bg-[#030b17]/80 bg-sky-50/80 border dark:border-white/5 border-sky-200/70 shadow-inner">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">
                     STAGE ID:
@@ -691,8 +691,25 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                 </button>
               </div>
 
-              {/* 3. Stealth Entry Toggle */}
-              <label className="flex items-center gap-2.5 px-3 py-2 rounded-xl dark:bg-[#030b17]/60 bg-sky-50/60 border dark:border-white/5 border-sky-100 cursor-pointer group hover:border-cyan-400/40 transition-colors">
+
+              {/* 3. Media Devices Quick Status */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-[#030b17]/60 bg-sky-50/60 border dark:border-white/5 border-sky-100">
+                  <Camera size={13} className={isCameraMuted ? "text-rose-400" : "text-cyan-400"} />
+                  <span className="truncate dark:text-neutral-300 text-slate-700 font-mono text-[11px]">
+                    {isCameraMuted ? "Cam Off" : "Cam Active"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-[#030b17]/60 bg-sky-50/60 border dark:border-white/5 border-sky-100">
+                  <Mic size={13} className={isMicMuted ? "text-rose-400" : "text-cyan-400"} />
+                  <span className="truncate dark:text-neutral-300 text-slate-700 font-mono text-[11px]">
+                    {isMicMuted ? "Mic Muted" : "Mic Active"}
+                  </span>
+                </div>
+              </div>
+
+              {/* 4. Stealth Entry Toggle */}
+              <label className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl dark:bg-[#030b17]/60 bg-sky-50/60 border dark:border-white/5 border-sky-100 cursor-pointer group hover:border-cyan-400/40 transition-colors">
                 <input
                   type="checkbox"
                   checked={isMicCamToggled}
@@ -709,7 +726,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                 </div>
               </label>
 
-              {/* 4. Telemetry Chips */}
+              {/* 5. Telemetry Chips */}
               <div className="flex items-center justify-between text-[10px] px-1 dark:text-neutral-400 text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -718,12 +735,12 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                 <span className="font-mono">WebRTC SFU Encrypted</span>
               </div>
 
-              {/* 5. Primary Action Buttons (Permanently Visible) */}
+              {/* 6. Primary Action Buttons */}
               <div className="flex flex-col gap-1.5 pt-0.5">
                 <button
                   onClick={handleJoin}
                   disabled={isJoining}
-                  className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-500 shadow-[0_0_24px_rgba(0,180,255,0.4)] hover:shadow-[0_0_36px_rgba(0,180,255,0.6)] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
+                  className="w-full inline-flex items-center justify-center gap-2.5 py-3.5 px-5 rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-500 shadow-[0_0_28px_rgba(0,180,255,0.45)] hover:shadow-[0_0_40px_rgba(0,180,255,0.7)] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60 cursor-pointer"
                 >
                   {isJoining ? (
                     <div className="flex items-center gap-1.5">
