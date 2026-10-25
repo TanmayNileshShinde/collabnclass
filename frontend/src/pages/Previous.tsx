@@ -1,8 +1,9 @@
+import { useState, useEffect } from "react";
 import CallList from "@/components/CallList";
 import { useGetCalls } from "@/hooks/useGetCalls";
-import { History, Users } from "lucide-react";
+import { History, Users, Search, X, Clock, Calendar } from "lucide-react";
 
-// Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home)
+// Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home & Upcoming)
 const OceanWaves = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
     {/* Dark Theme Waves */}
@@ -104,6 +105,28 @@ const Scanlines = () => (
 
 const Previous = () => {
   const { endedCalls } = useGetCalls();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const now = new Date();
+  const [time, setTime] = useState(
+    now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+  );
+  const dateStr = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(now);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(
+        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      );
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const totalEndedCount = endedCalls?.length ?? 0;
 
   return (
     <div className="relative min-h-[calc(100vh-80px)] w-full overflow-hidden transition-colors duration-300 dark:bg-[#020813] bg-slate-50 flex flex-col gap-8 pb-16">
@@ -151,30 +174,84 @@ const Previous = () => {
               </h1>
 
               <p className="text-sm sm:text-base dark:text-neutral-300 text-slate-600 font-normal leading-relaxed">
-                Review completed lecture sessions, check attendee participation logs, and access meeting details.
+                Review completed lecture sessions, check attendee participation logs, and access historical meeting details.
               </p>
             </div>
 
             {/* Right Telemetry Badge */}
-            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl shrink-0">
-              <div className="p-2.5 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
-                <Users className="w-5 h-5" />
+            <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 shrink-0 w-full sm:w-auto">
+              {/* Live Clock Card */}
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl">
+                <div className="p-2 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
+                  <Clock className="w-5 h-5 animate-pulse" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
+                    {time}
+                  </span>
+                  <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
+                    {dateStr}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
-                  {endedCalls?.length ?? 0}
-                </span>
-                <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
-                  Completed Sessions
-                </span>
+
+              {/* Sessions Counter Chip */}
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl shrink-0">
+                <div className="p-2 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
+                    {totalEndedCount}
+                  </span>
+                  <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
+                    Completed Sessions
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
+        {/* ========================================================
+            INTERACTIVE SEARCH COMMAND BAR
+        ======================================================== */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          {/* Quick Filter Tag */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl dark:bg-[#040e1c]/80 bg-white/80 backdrop-blur-xl border dark:border-[rgba(0,180,255,0.18)] border-sky-200/80 shadow-md">
+            <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-500 text-white shadow-md border border-cyan-400/40">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Concluded Sessions ({totalEndedCount})</span>
+            </div>
+          </div>
+
+          {/* Search Input Box */}
+          <div className="relative flex-1 max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+              <Search className="w-4 h-4 text-cyan-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search past sessions by title, code, or ID..."
+              className="w-full pl-10 pr-10 py-2.5 rounded-2xl text-xs sm:text-sm font-medium transition-all outline-none dark:bg-[#040e1c]/80 bg-white/90 backdrop-blur-xl border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 dark:text-white text-slate-900 placeholder:text-neutral-400 focus:dark:border-cyan-400 focus:border-sky-500 focus:ring-2 focus:ring-cyan-500/20 shadow-md"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-cyan-400 transition-colors"
+                title="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Meeting List */}
         <section className="relative w-full">
-          <CallList type="ended" />
+          <CallList type="ended" searchQuery={searchQuery} />
         </section>
       </div>
     </div>

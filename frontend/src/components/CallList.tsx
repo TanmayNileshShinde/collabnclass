@@ -92,7 +92,11 @@ const CallList = ({
         );
       } else {
         const r = meeting as CallRecording;
-        return (r.filename || "").toLowerCase().includes(q);
+        const filename = (r.filename || "").toLowerCase();
+        const dateStr = r.start_time
+          ? new Date(r.start_time).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }).toLowerCase()
+          : "";
+        return filename.includes(q) || dateStr.includes(q) || (r.url || "").toLowerCase().includes(q);
       }
     });
   }, [rawCalls, searchQuery]);
@@ -342,6 +346,8 @@ const CallList = ({
                 ? "There are currently no active peer video streams. Scheduled sessions will automatically show the live badge when launched."
                 : type === "upcoming"
                 ? "You're all caught up! Create an instant classroom session or schedule an upcoming lecture from the command dashboard."
+                : type === "recordings"
+                ? "Recorded lecture sessions and video replays will appear here once saved from a meeting."
                 : "Completed meeting sessions and attendance histories will appear here."}
             </p>
 
