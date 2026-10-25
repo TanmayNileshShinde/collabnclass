@@ -1,229 +1,183 @@
 import CallList from "@/components/CallList";
+import { useGetCalls } from "@/hooks/useGetCalls";
+import { History, Users } from "lucide-react";
+
+// Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home)
+const OceanWaves = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    {/* Dark Theme Waves */}
+    <svg
+      className="absolute bottom-0 left-0 w-full transition-opacity duration-300 dark:opacity-100 opacity-0"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ height: "100px" }}
+    >
+      <path
+        d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
+        fill="rgba(0, 100, 180, 0.07)"
+        style={{ animation: "waveMove 8s ease-in-out infinite" }}
+      />
+      <path
+        d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
+        fill="rgba(0, 150, 220, 0.05)"
+        style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
+      />
+    </svg>
+
+    {/* Light Theme Waves */}
+    <svg
+      className="absolute bottom-0 left-0 w-full transition-opacity duration-300 dark:opacity-0 opacity-100"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ height: "100px" }}
+    >
+      <path
+        d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
+        fill="rgba(2, 132, 199, 0.08)"
+        style={{ animation: "waveMove 8s ease-in-out infinite" }}
+      />
+      <path
+        d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
+        fill="rgba(14, 165, 233, 0.06)"
+        style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
+      />
+    </svg>
+
+    <style>{`
+      @keyframes waveMove {
+        0%, 100% { d: path("M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"); }
+        50% { d: path("M0,40 C180,70 360,10 540,50 C720,90 900,10 1080,50 C1260,90 1380,30 1440,45 L1440,120 L0,120 Z"); }
+      }
+      @keyframes floatBubble {
+        0% { transform: translateY(0) scale(1); opacity: 0.7; }
+        50% { transform: translateY(-40px) scale(1.1); opacity: 1; }
+        100% { transform: translateY(-80px) scale(0.8); opacity: 0; }
+      }
+    `}</style>
+  </div>
+);
+
+// Floating particle bubbles
+const Bubbles = () => {
+  const bubbles = [
+    { size: 5, left: "12%", delay: "0s", duration: "6s", bottom: "10%" },
+    { size: 4, left: "32%", delay: "1.5s", duration: "8s", bottom: "5%" },
+    { size: 6, left: "58%", delay: "3s", duration: "7s", bottom: "15%" },
+    { size: 3, left: "78%", delay: "0.8s", duration: "9s", bottom: "8%" },
+  ];
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+      {bubbles.map((b, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: b.size,
+            height: b.size,
+            left: b.left,
+            bottom: b.bottom,
+            background: `radial-gradient(circle at 30% 30%, rgba(150,220,255,0.9), rgba(0,150,220,0.3))`,
+            border: "1px solid rgba(0,200,255,0.4)",
+            boxShadow: "0 0 6px rgba(0,200,255,0.4)",
+            animation: `floatBubble ${b.duration} ${b.delay} ease-in infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Scanlines overlay for cyber depth
+const Scanlines = () => (
+  <div
+    className="absolute inset-0 pointer-events-none overflow-hidden transition-opacity duration-300 dark:opacity-[0.03] opacity-0"
+    style={{
+      backgroundImage:
+        "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,200,255,1) 2px, rgba(0,200,255,1) 3px)",
+      backgroundSize: "100% 3px",
+    }}
+  />
+);
 
 const Previous = () => {
+  const { endedCalls } = useGetCalls();
+
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+    <div className="relative min-h-[calc(100vh-80px)] w-full overflow-hidden transition-colors duration-300 dark:bg-[#020813] bg-slate-50 flex flex-col gap-8 pb-16">
+      {/* Background Atmosphere */}
+      <OceanWaves />
+      <Bubbles />
+      <Scanlines />
 
-        .previous-page {
-          font-family: 'DM Sans', sans-serif;
-          position: relative;
-          display: flex;
-          width: 100%;
-          height: 100%;
-          flex-direction: column;
-          gap: 36px;
-          padding: 40px 36px;
-          background: linear-gradient(160deg, #040c18 0%, #060f1e 50%, #030a14 100%);
-          min-height: 100vh;
-          overflow: hidden;
-        }
+      {/* Ambient Orbs */}
+      <div
+        className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none blur-3xl transition-opacity duration-300 dark:opacity-25 opacity-10"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(0, 180, 255, 0.4) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full pointer-events-none blur-3xl transition-opacity duration-300 dark:opacity-20 opacity-10"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(2, 132, 199, 0.35) 0%, transparent 70%)",
+        }}
+      />
 
-        /* Ambient background orbs */
-        .previous-page::before {
-          content: '';
-          position: fixed;
-          top: -120px;
-          right: -80px;
-          width: 500px;
-          height: 500px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 120, 255, 0.055) 0%, transparent 65%);
-          pointer-events: none;
-          z-index: 0;
-        }
+      <div className="relative z-10 flex flex-col gap-8 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        {/* ========================================================
+            HERO CYBER COMMAND BANNER
+        ======================================================== */}
+        <section className="relative overflow-hidden rounded-3xl p-6 sm:p-8 lg:p-10 border transition-all duration-300 dark:bg-gradient-to-br dark:from-[#040e1c]/90 dark:via-[#07162b]/85 dark:to-[#020813]/95 bg-gradient-to-br from-white/95 via-sky-50/90 to-slate-100/90 backdrop-blur-2xl dark:border-[rgba(0,180,255,0.22)] border-sky-200/90 shadow-[0_12px_44px_rgba(0,0,0,0.25)]">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80" />
 
-        .previous-page::after {
-          content: '';
-          position: fixed;
-          bottom: -100px;
-          left: -60px;
-          width: 400px;
-          height: 400px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 80, 200, 0.04) 0%, transparent 65%);
-          pointer-events: none;
-          z-index: 0;
-        }
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+            {/* Left Titles */}
+            <div className="flex flex-col gap-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border dark:border-cyan-500/30 border-sky-400/40 dark:bg-cyan-950/40 bg-sky-100/80 dark:text-cyan-300 text-sky-700 shadow-sm w-fit">
+                <History className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Archive & Attendance Log</span>
+              </div>
 
-        
-        :not(.dark) .previous-page {
-          background: linear-gradient(160deg, #f8fafc 0%, #f0f7fe 50%, #e2e8f0 100%) !important;
-          color: #0f172a !important;
-        }
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-syne tracking-tight dark:text-white text-slate-900 leading-[1.15]">
+                Previous{" "}
+                <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent">
+                  Classrooms
+                </span>
+              </h1>
 
-        :not(.dark) .previous-title {
-          background: linear-gradient(135deg, #091e42 0%, #0284c7 50%, #0369a1 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-        }
-
-        :not(.dark) .previous-title-sub {
-          color: #475569 !important;
-        }
-
-        .previous-content {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 36px;
-        }
-
-        /* Header block */
-        .previous-header {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .previous-eyebrow {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.72rem;
-          font-weight: 500;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: rgba(0, 160, 255, 0.65);
-        }
-
-        .previous-eyebrow-line {
-          width: 24px;
-          height: 1px;
-          background: linear-gradient(90deg, rgba(0, 160, 255, 0.6), transparent);
-        }
-
-        .previous-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(1.8rem, 3vw, 2.6rem);
-          font-weight: 800;
-          letter-spacing: -0.03em;
-          line-height: 1.1;
-          margin: 0;
-          background: linear-gradient(135deg, #e0f0ff 0%, #90ccff 40%, #4899e8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          position: relative;
-          display: inline-block;
-        }
-
-        .previous-title-sub {
-          font-size: 0.88rem;
-          font-weight: 400;
-          color: rgba(100, 160, 220, 0.55);
-          letter-spacing: 0.01em;
-          margin-top: 4px;
-        }
-
-        /* Decorative separator */
-        .previous-separator {
-          width: 100%;
-          height: 1px;
-          background: linear-gradient(90deg, rgba(0, 140, 255, 0.2), rgba(0, 100, 200, 0.06), transparent);
-          position: relative;
-        }
-
-        .previous-separator::before {
-          content: '';
-          position: absolute;
-          left: 0; top: -1px;
-          width: 60px; height: 3px;
-          border-radius: 2px;
-          background: linear-gradient(90deg, rgba(0, 160, 255, 0.8), transparent);
-        }
-
-        /* Scan-line texture overlay */
-        .scanlines {
-          position: fixed;
-          inset: 0;
-          pointer-events: none;
-          z-index: 0;
-          background-image: repeating-linear-gradient(
-            0deg,
-            transparent,
-            transparent 2px,
-            rgba(0, 0, 0, 0.03) 2px,
-            rgba(0, 0, 0, 0.03) 4px
-          );
-        }
-
-        /* History icon chip */
-        .history-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          padding: 5px 14px 5px 8px;
-          border-radius: 30px;
-          background: rgba(0, 80, 180, 0.1);
-          border: 1px solid rgba(0, 140, 255, 0.15);
-          width: fit-content;
-          backdrop-filter: blur(4px);
-        }
-
-        .history-chip-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: rgba(0, 160, 255, 0.7);
-          box-shadow: 0 0 6px rgba(0, 160, 255, 0.5);
-        }
-
-        .history-chip-label {
-          font-size: 0.73rem;
-          font-weight: 500;
-          color: rgba(80, 180, 255, 0.8);
-          letter-spacing: 0.04em;
-        }
-
-        /* CallList wrapper */
-        .calllist-wrapper {
-          position: relative;
-          z-index: 1;
-        }
-
-        /* Fade-in animation for page load */
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .previous-header {
-          animation: fadeSlideUp 0.5s ease forwards;
-        }
-
-        .calllist-wrapper {
-          animation: fadeSlideUp 0.6s ease 0.1s both;
-        }
-      `}</style>
-
-      <div className="previous-page">
-        <div className="scanlines" />
-
-        <div className="previous-content">
-          {/* Header */}
-          <header className="previous-header">
-            <div className="history-chip">
-              <span className="history-chip-dot" />
-              <span className="history-chip-label">Call Archive</span>
+              <p className="text-sm sm:text-base dark:text-neutral-300 text-slate-600 font-normal leading-relaxed">
+                Review completed lecture sessions, check attendee participation logs, and access meeting details.
+              </p>
             </div>
 
-            <div>
-              <h1 className="previous-title">Previous Calls</h1>
-              <p className="previous-title-sub">Browse and revisit your past meetings</p>
+            {/* Right Telemetry Badge */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl shrink-0">
+              <div className="p-2.5 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
+                  {endedCalls?.length ?? 0}
+                </span>
+                <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
+                  Completed Sessions
+                </span>
+              </div>
             </div>
-
-            <div className="previous-separator" />
-          </header>
-
-          {/* Call list */}
-          <div className="calllist-wrapper">
-            <CallList type="ended" />
           </div>
-        </div>
+        </section>
+
+        {/* Meeting List */}
+        <section className="relative w-full">
+          <CallList type="ended" />
+        </section>
       </div>
-    </>
+    </div>
   );
 };
 

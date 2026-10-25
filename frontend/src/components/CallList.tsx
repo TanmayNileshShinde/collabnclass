@@ -8,14 +8,26 @@ import { useGetCalls } from "@/hooks/useGetCalls";
 import MeetingCard from "./MeetingCard";
 import { useToast } from "./ui/use-toast";
 import AttendanceModal from "./AttendanceModal";
-import { Radio, Calendar, Sparkles } from "lucide-react";
+import { Radio, Calendar, Sparkles, CalendarX, Plus, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+export type UpcomingFilterType = "all" | "live" | "scheduled";
 
 interface CallListProps {
   type: "ended" | "upcoming" | "recordings";
+  searchQuery?: string;
+  activeFilter?: UpcomingFilterType;
+  onFilterChange?: (filter: UpcomingFilterType) => void;
+  hideFilterHeader?: boolean;
 }
 
-const CallList = ({ type }: CallListProps) => {
+const CallList = ({
+  type,
+  searchQuery = "",
+  activeFilter,
+  onFilterChange,
+  hideFilterHeader = false,
+}: CallListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getToken } = useAuth();
@@ -23,7 +35,7 @@ const CallList = ({ type }: CallListProps) => {
     useGetCalls();
 
   const [recordings, setRecordings] = useState<CallRecording[]>([]);
-  const [upcomingFilter, setUpcomingFilter] = useState<"all" | "live" | "scheduled">("all");
+  const [internalFilter, setInternalFilter] = useState<UpcomingFilterType>("all");
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
     meetingId: string;
@@ -34,6 +46,9 @@ const CallList = ({ type }: CallListProps) => {
     meetingTitle: "",
   });
 
+  const currentFilter = activeFilter ?? internalFilter;
+  const setFilter = onFilterChange ?? setInternalFilter;
+
   const handleViewAttendance = (meetingId: string, meetingTitle: string) => {
     setAttendanceModal({
       isOpen: true,
@@ -42,37 +57,45 @@ const CallList = ({ type }: CallListProps) => {
     });
   };
 
-  const calls = useMemo(() => {
+  const rawCalls = useMemo(() => {
     switch (type) {
       case "ended":
         return endedCalls;
       case "recordings":
         return recordings;
       case "upcoming": {
-        if (upcomingFilter === "live") return liveCalls;
-        if (upcomingFilter === "scheduled") return upcomingCalls;
-        // All: Live calls first, followed by upcoming
+        if (currentFilter === "live") return liveCalls;
+        if (currentFilter === "scheduled") return upcomingCalls;
+        // All: Live calls first, followed by scheduled
         return [...liveCalls, ...upcomingCalls];
       }
       default:
         return [];
     }
-  }, [type, endedCalls, recordings, upcomingFilter, liveCalls, upcomingCalls]);
+  }, [type, endedCalls, recordings, currentFilter, liveCalls, upcomingCalls]);
 
-  const getNoCallsMessage = () => {
-    switch (type) {
-      case "ended":
-        return "No Previous Calls";
-      case "upcoming":
-        if (upcomingFilter === "live") return "No Live Classes in Session";
-        if (upcomingFilter === "scheduled") return "No Upcoming Scheduled Classes";
-        return "No Upcoming or Live Classes";
-      case "recordings":
-        return "No Recordings Available";
-      default:
-        return "No Calls";
-    }
-  };
+  // Apply search query filter
+  const calls = useMemo(() => {
+    if (!searchQuery.trim()) return rawCalls;
+    const q = searchQuery.toLowerCase().trim();
+    return rawCalls.filter((meeting: Call | CallRecording) => {
+      const isCall = !("filename" in meeting);
+      if (isCall) {
+        const c = meeting as Call;
+        const title = c.state?.custom?.heading || c.state?.custom?.description || "";
+        const id = c.id || "";
+        const code = c.state?.custom?.meetingCode || "";
+        return (
+          title.toLowerCase().includes(q) ||
+          id.toLowerCase().includes(q) ||
+          code.toLowerCase().includes(q)
+        );
+      } else {
+        const r = meeting as CallRecording;
+        return (r.filename || "").toLowerCase().includes(q);
+      }
+    });
+  }, [rawCalls, searchQuery]);
 
   const handleDeleteRecording = async (recording: CallRecording) => {
     try {
@@ -149,21 +172,19 @@ const CallList = ({ type }: CallListProps) => {
 
   if (isLoading) return <Loader />;
 
-  const noCallsMessage = getNoCallsMessage();
   const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
-
   const totalUpcomingCount = (liveCalls?.length ?? 0) + (upcomingCalls?.length ?? 0);
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      {/* Dynamic Filter Tabs for Upcoming Page */}
-      {type === "upcoming" && totalUpcomingCount > 0 && (
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#040e1c]/80 backdrop-blur-xl border border-[rgba(0,180,255,0.18)] max-w-fit shadow-lg">
+      {/* Dynamic Filter Tabs (rendered when not hidden by parent) */}
+      {!hideFilterHeader && type === "upcoming" && totalUpcomingCount > 0 && (
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl dark:bg-[#040e1c]/80 bg-white/80 backdrop-blur-xl border dark:border-[rgba(0,180,255,0.18)] border-sky-200/80 max-w-fit shadow-lg">
           <button
-            onClick={() => setUpcomingFilter("all")}
+            onClick={() => setFilter("all")}
             className={cn(
               "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all",
-              upcomingFilter === "all"
+              currentFilter === "all"
                 ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md border border-cyan-400/40"
                 : "text-neutral-400 hover:text-white hover:bg-white/[0.04]"
             )}
@@ -173,10 +194,10 @@ const CallList = ({ type }: CallListProps) => {
           </button>
 
           <button
-            onClick={() => setUpcomingFilter("live")}
+            onClick={() => setFilter("live")}
             className={cn(
               "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all",
-              upcomingFilter === "live"
+              currentFilter === "live"
                 ? "bg-rose-500/25 text-rose-200 border border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.35)]"
                 : "text-neutral-400 hover:text-rose-300 hover:bg-rose-500/10"
             )}
@@ -189,10 +210,10 @@ const CallList = ({ type }: CallListProps) => {
           </button>
 
           <button
-            onClick={() => setUpcomingFilter("scheduled")}
+            onClick={() => setFilter("scheduled")}
             className={cn(
               "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all",
-              upcomingFilter === "scheduled"
+              currentFilter === "scheduled"
                 ? "bg-cyan-500/25 text-cyan-200 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,220,255,0.25)]"
                 : "text-neutral-400 hover:text-cyan-300 hover:bg-cyan-500/10"
             )}
@@ -204,7 +225,7 @@ const CallList = ({ type }: CallListProps) => {
       )}
 
       {/* Grid of Meeting Cards */}
-      <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+      <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {calls && calls.length > 0 ? (
           calls.map((meeting: Call | CallRecording) => {
             const isCall = !("filename" in meeting);
@@ -230,14 +251,25 @@ const CallList = ({ type }: CallListProps) => {
                 }
                 isLive={isLive}
                 title={
+                  (meeting as Call).state?.custom?.heading ||
                   (meeting as Call).state?.custom?.description ||
                   (meeting as CallRecording).filename?.substring(0, 24) ||
                   "Class Meeting"
                 }
                 date={
-                  (meeting as Call).state?.startsAt?.toLocaleString() ||
-                  (meeting as CallRecording).start_time?.toLocaleString() ||
-                  "Date not set"
+                  !isCall
+                    ? (meeting as CallRecording).start_time
+                      ? new Date((meeting as CallRecording).start_time).toLocaleString([], {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })
+                      : "Date not set"
+                    : (meeting as Call).state?.startsAt
+                    ? (meeting as Call).state.startsAt!.toLocaleString([], {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })
+                    : "Date not set"
                 }
                 isPreviousMeeting={type === "ended"}
                 link={
@@ -271,14 +303,67 @@ const CallList = ({ type }: CallListProps) => {
             );
           })
         ) : (
-          <div className="col-span-full flex flex-col items-center justify-center p-12 rounded-3xl bg-white/[0.02] border border-white/[0.05] text-center">
-            <Radio className="w-10 h-10 text-neutral-500 mb-3" />
-            <h1 className="text-xl font-bold text-white">{noCallsMessage}</h1>
-            <p className="text-sm text-neutral-400 mt-1 max-w-sm">
-              {type === "upcoming"
-                ? "Schedule a new classroom session from the dashboard to see it listed here."
-                : "No meetings found for this section."}
+          /* High-End Cyberpunk Empty State */
+          <div className="col-span-full flex flex-col items-center justify-center p-10 sm:p-14 rounded-3xl dark:bg-[#040e1c]/80 bg-white/80 backdrop-blur-xl border dark:border-[rgba(0,180,255,0.18)] border-sky-200/80 text-center shadow-lg relative overflow-hidden">
+            {/* Ambient background glow */}
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none"
+              style={{
+                background: "radial-gradient(circle, rgba(0, 180, 255, 0.08) 0%, transparent 70%)",
+              }}
+            />
+
+            <div className="relative z-10 w-16 h-16 rounded-2xl flex items-center justify-center dark:bg-cyan-500/10 bg-sky-50 border dark:border-cyan-500/30 border-sky-300 text-cyan-400 mb-4 shadow-[0_0_20px_rgba(0,180,255,0.2)]">
+              {searchQuery ? (
+                <CalendarX className="w-8 h-8 text-cyan-400" />
+              ) : currentFilter === "live" ? (
+                <Radio className="w-8 h-8 text-rose-400 animate-pulse" />
+              ) : (
+                <Calendar className="w-8 h-8 text-cyan-400" />
+              )}
+            </div>
+
+            <h3 className="relative z-10 text-xl font-bold font-syne dark:text-white text-slate-900 mb-1.5">
+              {searchQuery
+                ? "No Classrooms Found"
+                : currentFilter === "live"
+                ? "No Live Classrooms Active Right Now"
+                : type === "upcoming"
+                ? "No Upcoming Classrooms Scheduled"
+                : type === "recordings"
+                ? "No Session Recordings Available"
+                : "No Previous Calls"}
+            </h3>
+
+            <p className="relative z-10 text-sm dark:text-neutral-400 text-slate-500 max-w-md mb-6 leading-relaxed">
+              {searchQuery
+                ? `No sessions match "${searchQuery}". Check the meeting title, code, or reset your search.`
+                : currentFilter === "live"
+                ? "There are currently no active peer video streams. Scheduled sessions will automatically show the live badge when launched."
+                : type === "upcoming"
+                ? "You're all caught up! Create an instant classroom session or schedule an upcoming lecture from the command dashboard."
+                : "Completed meeting sessions and attendance histories will appear here."}
             </p>
+
+            <div className="relative z-10 flex items-center gap-3 flex-wrap justify-center">
+              <button
+                onClick={() => navigate("/")}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-500 shadow-[0_0_20px_rgba(0,180,255,0.35)] hover:shadow-[0_0_28px_rgba(0,180,255,0.5)] active:scale-95 transition-all"
+              >
+                <Plus size={15} />
+                <span>Go to Dashboard & Schedule</span>
+              </button>
+
+              {searchQuery && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium dark:bg-white/[0.04] bg-slate-100 hover:bg-slate-200 dark:hover:bg-white/10 border dark:border-white/10 border-slate-200 dark:text-neutral-300 text-slate-700 transition-all"
+                >
+                  <RefreshCw size={13} />
+                  <span>Reset Search</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 

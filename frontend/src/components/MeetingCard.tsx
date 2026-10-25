@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { avatarImages } from "@/constants";
 import { useToast } from "./ui/use-toast";
-import { Users, Copy, Play, Trash2, Radio } from "lucide-react";
+import { Users, Copy, Play, Trash2, Radio, Clock, Check, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatMeetingCode } from "@/lib/meetingUtils";
 
 interface MeetingCardProps {
   title: string;
@@ -37,498 +39,229 @@ const MeetingCard = ({
   onViewAttendance,
 }: MeetingCardProps) => {
   const { toast } = useToast();
+  const [isCopiedLink, setIsCopiedLink] = useState(false);
+  const [isCopiedCode, setIsCopiedCode] = useState(false);
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(link);
+    setIsCopiedLink(true);
+    toast({ title: "Classroom Link Copied", description: "Meeting URL ready to share." });
+    setTimeout(() => setIsCopiedLink(false), 2200);
+  };
+
+  const copyCode = () => {
+    if (!meetingId) return;
+    navigator.clipboard.writeText(meetingId);
+    setIsCopiedCode(true);
+    toast({ title: "Meeting Code Copied", description: meetingId });
+    setTimeout(() => setIsCopiedCode(false), 2200);
+  };
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+    <div
+      className={cn(
+        "group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 transition-all duration-300 ease-out overflow-hidden border",
+        "backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] hover:-translate-y-1.5",
+        isLive
+          ? "dark:bg-gradient-to-b dark:from-[#130713]/90 dark:to-[#080209]/90 bg-rose-50/70 border-rose-500/40 hover:border-rose-400/70 shadow-[0_0_24px_rgba(244,63,94,0.18)] hover:shadow-[0_0_36px_rgba(244,63,94,0.3)]"
+          : "dark:bg-[#040e1c]/85 bg-white/90 dark:border-[rgba(0,180,255,0.16)] border-sky-200/80 hover:dark:border-[rgba(0,229,255,0.4)] hover:border-sky-400 hover:shadow-[0_12px_40px_rgba(0,180,255,0.18)]"
+      )}
+    >
+      {/* Top Ambient Glow Line */}
+      <div
+        className={cn(
+          "absolute inset-x-0 top-0 h-[2px] pointer-events-none transition-opacity duration-300",
+          isLive
+            ? "bg-gradient-to-r from-transparent via-rose-500 to-transparent"
+            : "bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-70 group-hover:opacity-100"
+        )}
+      />
 
-        .meeting-card {
-          font-family: 'DM Sans', sans-serif;
-          position: relative;
-          display: flex;
-          min-height: 280px;
-          width: 100%;
-          flex-direction: column;
-          justify-content: space-between;
-          border-radius: 20px;
-          padding: 28px;
-          background: linear-gradient(145deg, #050d1a 0%, #071525 60%, #040e1c 100%);
-          border: 1px solid rgba(0, 160, 255, 0.12);
-          overflow: hidden;
-          box-shadow: 0 0 0 1px rgba(0,180,255,0.04), 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,140,255,0.08);
-          transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-        }
+      {/* Top Ambient Glow Orb */}
+      <div
+        className={cn(
+          "absolute -top-16 -right-16 w-36 h-36 rounded-full pointer-events-none blur-2xl transition-opacity duration-300",
+          isLive ? "bg-rose-500/15" : "bg-cyan-500/10 group-hover:bg-cyan-500/20"
+        )}
+      />
 
-        
-        :not(.dark) .meeting-card {
-          background: linear-gradient(145deg, #ffffff 0%, #f8fafc 60%, #f0f7fe 100%) !important;
-          border: 1px solid rgba(0, 140, 240, 0.18) !important;
-          box-shadow: 0 4px 20px rgba(0, 60, 140, 0.06), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-        }
-
-        :not(.dark) .card-title {
-          color: #0f172a !important;
-          text-shadow: none !important;
-        }
-
-        :not(.dark) .card-date {
-          color: #475569 !important;
-        }
-
-        :not(.dark) .btn-ghost {
-          background: rgba(2, 132, 199, 0.08) !important;
-          color: #0284c7 !important;
-          border: 1px solid rgba(2, 132, 199, 0.25) !important;
-        }
-
-        .meeting-card::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(0, 180, 255, 0.6), rgba(0,220,255,0.8), rgba(0, 180, 255, 0.6), transparent);
-        }
-
-        .meeting-card-live::before {
-          background: linear-gradient(90deg, transparent, rgba(255, 50, 90, 0.8), rgba(255, 100, 140, 1), rgba(255, 50, 90, 0.8), transparent) !important;
-        }
-
-        .meeting-card::after {
-          content: '';
-          position: absolute;
-          top: -80px; right: -80px;
-          width: 220px; height: 220px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 140, 255, 0.07) 0%, transparent 70%);
-          pointer-events: none;
-        }
-
-        .meeting-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 0 0 1px rgba(0,200,255,0.15), 0 16px 56px rgba(0,0,0,0.7), 0 0 32px rgba(0,160,255,0.1);
-          border-color: rgba(0, 180, 255, 0.25);
-        }
-
-        .meeting-card-live {
-          border-color: rgba(255, 50, 90, 0.35) !important;
-          box-shadow: 0 0 0 1px rgba(255, 50, 90, 0.15), 0 16px 56px rgba(0,0,0,0.75), 0 0 36px rgba(255, 30, 80, 0.15) !important;
-        }
-
-        .card-glow-orb {
-          position: absolute;
-          bottom: -60px; left: -40px;
-          width: 180px; height: 180px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 100, 200, 0.06) 0%, transparent 70%);
-          pointer-events: none;
-        }
-
-        .card-icon-wrapper {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 48px; height: 48px;
-          border-radius: 14px;
-          background: linear-gradient(135deg, rgba(0, 140, 255, 0.15), rgba(0, 80, 180, 0.08));
-          border: 1px solid rgba(0, 160, 255, 0.2);
-          box-shadow: 0 0 16px rgba(0, 140, 255, 0.1);
-        }
-
-        .card-icon-wrapper-live {
-          background: linear-gradient(135deg, rgba(255, 50, 90, 0.2), rgba(180, 20, 60, 0.1)) !important;
-          border-color: rgba(255, 60, 110, 0.35) !important;
-          box-shadow: 0 0 16px rgba(255, 50, 90, 0.25) !important;
-        }
-
-        .card-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #e8f4ff;
-          letter-spacing: -0.02em;
-          line-height: 1.3;
-          margin: 0;
-          text-shadow: 0 0 20px rgba(0, 160, 255, 0.15);
-        }
-
-        .card-date {
-          font-size: 0.82rem;
-          font-weight: 400;
-          color: rgba(100, 180, 255, 0.65);
-          letter-spacing: 0.03em;
-          margin: 0;
-        }
-
-        .divider {
-          width: 100%;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(0, 140, 255, 0.12), transparent);
-          margin: 4px 0;
-        }
-
-        .attendees-row {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        .avatar-stack {
-          display: flex;
-          position: relative;
-        }
-
-        .avatar-img {
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          border: 2px solid rgba(0, 140, 255, 0.4);
-          box-shadow: 0 0 8px rgba(0, 120, 255, 0.2);
-          transition: transform 0.2s ease;
-        }
-
-        .avatar-img:hover { transform: translateY(-2px) scale(1.1); }
-
-        .avatar-overflow {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px; height: 32px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #0a3060, #051a3a);
-          border: 2px solid rgba(0, 140, 255, 0.4);
-          font-size: 0.65rem;
-          font-weight: 600;
-          color: rgba(120, 200, 255, 0.9);
-        }
-
-        .btn-primary {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 9px 18px;
-          border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.82rem;
-          font-weight: 500;
-          letter-spacing: 0.02em;
-          cursor: pointer;
-          border: none;
-          transition: all 0.25s ease;
-          background: linear-gradient(135deg, #0070e0, #0050b0);
-          color: #e8f4ff;
-          box-shadow: 0 4px 14px rgba(0, 100, 220, 0.35), inset 0 1px 0 rgba(255,255,255,0.1);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .btn-primary-live {
-          background: linear-gradient(135deg, #e11d48, #be123c) !important;
-          box-shadow: 0 4px 16px rgba(225, 29, 72, 0.45), inset 0 1px 0 rgba(255,255,255,0.2) !important;
-          color: #ffffff !important;
-          font-weight: 600 !important;
-        }
-
-        .btn-primary-live:hover {
-          background: linear-gradient(135deg, #f43f5e, #e11d48) !important;
-          box-shadow: 0 6px 24px rgba(225, 29, 72, 0.6) !important;
-          transform: translateY(-1px);
-        }
-
-        .btn-primary::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-
-        .btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(0, 120, 255, 0.5), inset 0 1px 0 rgba(255,255,255,0.15);
-          background: linear-gradient(135deg, #0080f0, #0060c0);
-        }
-
-        .btn-primary:hover::before { opacity: 1; }
-        .btn-primary:active { transform: translateY(0); }
-
-        .btn-ghost {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 9px 18px;
-          border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.82rem;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1px solid rgba(0, 140, 255, 0.18);
-          transition: all 0.25s ease;
-          background: rgba(0, 60, 120, 0.12);
-          color: rgba(120, 190, 255, 0.85);
-          backdrop-filter: blur(4px);
-        }
-
-        .btn-ghost:hover {
-          background: rgba(0, 100, 200, 0.2);
-          border-color: rgba(0, 160, 255, 0.4);
-          color: #a8d8ff;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0, 100, 200, 0.2);
-        }
-
-        .btn-attendance {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 9px 18px;
-          border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.82rem;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1px solid rgba(0, 200, 150, 0.25);
-          transition: all 0.25s ease;
-          background: linear-gradient(135deg, rgba(0, 160, 120, 0.2), rgba(0, 100, 80, 0.1));
-          color: rgba(80, 220, 180, 0.9);
-        }
-
-        .btn-attendance:hover {
-          background: linear-gradient(135deg, rgba(0, 180, 130, 0.3), rgba(0, 120, 90, 0.2));
-          border-color: rgba(0, 220, 160, 0.4);
-          color: #60ffcc;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(0, 180, 130, 0.25);
-        }
-
-        .btn-danger {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 9px 18px;
-          border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.82rem;
-          font-weight: 500;
-          cursor: pointer;
-          border: 1px solid rgba(255, 60, 60, 0.2);
-          transition: all 0.25s ease;
-          background: linear-gradient(135deg, rgba(180, 30, 30, 0.2), rgba(120, 20, 20, 0.1));
-          color: rgba(255, 120, 120, 0.9);
-        }
-
-        .btn-danger:hover {
-          background: linear-gradient(135deg, rgba(200, 40, 40, 0.3), rgba(150, 20, 20, 0.2));
-          border-color: rgba(255, 80, 80, 0.4);
-          color: #ff9090;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(200, 40, 40, 0.25);
-        }
-
-        .actions-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        /* ── Status Badges ── */
-        .badge-live-now {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          background: rgba(225, 29, 72, 0.16);
-          border: 1px solid rgba(244, 63, 94, 0.55);
-          color: #fda4af;
-          box-shadow: 0 0 16px rgba(225, 29, 72, 0.35);
-        }
-
-        .badge-live-now-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #f43f5e;
-          box-shadow: 0 0 8px #f43f5e, 0 0 14px #e11d48;
-          animation: pulse-dot 1.2s ease-in-out infinite;
-        }
-
-        .badge-upcoming {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 10px;
-          border-radius: 20px;
-          font-size: 0.7rem;
-          font-weight: 600;
-          letter-spacing: 0.05em;
-          text-transform: uppercase;
-          background: rgba(0, 180, 255, 0.1);
-          border: 1px solid rgba(0, 180, 255, 0.25);
-          color: rgba(100, 210, 255, 0.9);
-        }
-
-        .badge-upcoming-dot {
-          width: 5px; height: 5px;
-          border-radius: 50%;
-          background: #00e5ff;
-          box-shadow: 0 0 6px #00e5ff;
-          animation: pulse-dot 2s ease-in-out infinite;
-        }
-
-        .badge-ended {
-          display: inline-flex;
-          align-items: center;
-          padding: 3px 10px;
-          border-radius: 20px;
-          font-size: 0.7rem;
-          font-weight: 500;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: rgba(200, 215, 230, 0.6);
-        }
-
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.4; transform: scale(0.75); }
-        }
-      `}</style>
-
-      <section className={cn("meeting-card", isLive && "meeting-card-live")}>
-        <div className="card-glow-orb" />
-
-        {/* Top: Icon + Title */}
-        <article style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div className={cn("card-icon-wrapper", isLive && "card-icon-wrapper-live")}>
-              {isLive ? (
-                <Radio className="w-5 h-5 text-rose-400 animate-pulse" />
-              ) : (
-                <img src={icon} alt="meeting type" width={22} height={22} />
-              )}
-            </div>
-
-            {/* Dynamic Status Badges */}
+      {/* Card Header & Content */}
+      <div className="relative z-10 flex flex-col gap-4">
+        {/* Top Header Row: Icon + Status Pill */}
+        <div className="flex items-center justify-between gap-3">
+          <div
+            className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center border transition-transform duration-300 group-hover:scale-105",
+              isLive
+                ? "bg-rose-500/15 border-rose-500/35 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.25)]"
+                : "dark:bg-cyan-500/10 bg-sky-50 dark:border-cyan-500/25 border-sky-300 dark:text-cyan-300 text-sky-600 shadow-[0_0_14px_rgba(0,180,255,0.15)]"
+            )}
+          >
             {isLive ? (
-              <span className="badge-live-now animate-pulse">
-                <span className="badge-live-now-dot" />
-                LIVE NOW
-              </span>
-            ) : isPreviousMeeting ? (
-              <span className="badge-ended">
-                Ended
-              </span>
+              <Radio className="w-5 h-5 text-rose-400 animate-pulse" />
+            ) : buttonIcon1 ? (
+              <img src={buttonIcon1} alt="Icon" width={22} height={22} className="object-contain" />
+            ) : icon ? (
+              <img src={icon} alt="Icon" width={22} height={22} className="object-contain" />
             ) : (
-              <span className="badge-upcoming">
-                <span className="badge-upcoming-dot" />
-                Scheduled
-              </span>
+              <Calendar className="w-5 h-5 dark:text-cyan-400 text-sky-600" />
             )}
           </div>
 
-          <div>
-            <h1 className="card-title">{title}</h1>
-            <p className="card-date" style={{ marginTop: '5px' }}>{date}</p>
+          {/* Dynamic Status Badges */}
+          {isLive ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-rose-500/15 border border-rose-500/50 text-rose-400 shadow-[0_0_14px_rgba(244,63,94,0.3)] animate-pulse">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+              </span>
+              <span>LIVE NOW</span>
+            </span>
+          ) : isPreviousMeeting ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium uppercase tracking-wider dark:bg-white/5 bg-slate-100 border dark:border-white/10 border-slate-200 text-neutral-400">
+              Concluded
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider dark:bg-cyan-500/10 bg-sky-50 border dark:border-cyan-500/30 border-sky-200 dark:text-cyan-300 text-sky-700 shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <span>Scheduled</span>
+            </span>
+          )}
+        </div>
+
+        {/* Title, Date, Code */}
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold font-syne tracking-tight dark:text-white text-slate-900 line-clamp-1 group-hover:text-cyan-400 dark:group-hover:text-cyan-300 transition-colors">
+            {title}
+          </h2>
+
+          <div className="flex items-center gap-1.5 text-xs font-medium dark:text-neutral-400 text-slate-500 mt-2">
+            <Clock className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+            <span className="truncate">{date}</span>
           </div>
-        </article>
 
-        <div className="divider" />
+          {meetingId && (
+            <button
+              onClick={copyCode}
+              className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono dark:bg-white/[0.04] bg-slate-100 border dark:border-white/10 border-slate-200 hover:border-cyan-400 text-neutral-300 dark:text-neutral-300 text-slate-600 hover:text-cyan-500 dark:hover:text-cyan-300 transition-colors shadow-sm"
+              title="Click to copy meeting code"
+            >
+              <span className="text-[10px] uppercase font-bold text-neutral-400">CODE:</span>
+              <span className="font-semibold tracking-wider text-cyan-600 dark:text-cyan-300">
+                {formatMeetingCode(meetingId)}
+              </span>
+              {isCopiedCode ? (
+                <Check size={12} className="text-emerald-400 shrink-0" />
+              ) : (
+                <Copy size={12} className="text-neutral-400 shrink-0" />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
 
-        {/* Bottom: Avatars + Actions */}
-        <article style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {showAttendees && (
-            <div className="attendees-row max-sm:hidden">
-              <div className="avatar-stack">
-                {avatarImages.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    alt="attendee"
-                    className="avatar-img"
-                    style={{
-                      position: index === 0 ? 'relative' : 'absolute',
-                      left: index === 0 ? 0 : `${index * 22}px`,
-                      top: 0,
-                      zIndex: avatarImages.length - index,
-                    }}
-                  />
-                ))}
-                <div
-                  className="avatar-overflow"
-                  style={{ position: 'absolute', left: `${avatarImages.length * 22}px`, top: 0 }}
-                >
-                  +5
+      {/* Divider */}
+      <div className="relative z-10 w-full h-px dark:bg-white/5 bg-slate-200/80 my-4" />
+
+      {/* Card Footer: Attendees + Action Buttons */}
+      <div className="relative z-10 flex flex-col gap-3">
+        {showAttendees && (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center -space-x-2 overflow-hidden">
+              {avatarImages.slice(0, 4).map((img, index) => (
+                <img
+                  key={index}
+                  src={img}
+                  alt="Attendee"
+                  className="inline-block h-7 w-7 rounded-full border-2 dark:border-[#040e1c] border-white ring-1 ring-cyan-500/30 object-cover hover:translate-y-[-2px] hover:scale-110 transition-transform"
+                />
+              ))}
+              {avatarImages.length > 4 && (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full dark:bg-[#07162b] bg-slate-200 border-2 dark:border-[#040e1c] border-white text-[10px] font-bold dark:text-cyan-300 text-slate-700">
+                  +{avatarImages.length - 4}
                 </div>
-              </div>
+              )}
             </div>
+            <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
+              Classroom Attendees
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 pt-1 flex-wrap">
+          {/* Primary Action Button */}
+          <button
+            onClick={handleClick}
+            className={cn(
+              "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs text-white transition-all shadow-md active:scale-95",
+              isLive
+                ? "bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 shadow-[0_0_20px_rgba(244,63,94,0.4)] hover:shadow-[0_0_28px_rgba(244,63,94,0.6)] hover:brightness-110"
+                : "bg-gradient-to-r from-blue-600 via-sky-600 to-cyan-500 shadow-[0_0_16px_rgba(0,180,255,0.3)] hover:shadow-[0_0_24px_rgba(0,180,255,0.5)] hover:brightness-110"
+            )}
+          >
+            {isLive ? (
+              <>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                </span>
+                <span>Join Live Class</span>
+              </>
+            ) : (
+              <>
+                {buttonIcon1 ? (
+                  <img src={buttonIcon1} alt="" width={14} height={14} />
+                ) : (
+                  <Play size={13} fill="currentColor" />
+                )}
+                <span>{buttonText || "Start Class"}</span>
+              </>
+            )}
+          </button>
+
+          {/* Copy Link Button */}
+          <button
+            onClick={copyLink}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-medium dark:bg-white/[0.04] bg-slate-100 hover:bg-slate-200/80 dark:hover:bg-white/10 border dark:border-white/10 border-slate-200/80 dark:text-neutral-300 text-slate-700 transition-all active:scale-95"
+            title="Copy invitation link"
+          >
+            {isCopiedLink ? (
+              <>
+                <Check size={13} className="text-emerald-400" />
+                <span className="text-emerald-400 font-semibold">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={13} />
+                <span>Copy Link</span>
+              </>
+            )}
+          </button>
+
+          {/* Attendance Modal Trigger (Previous Meetings) */}
+          {isPreviousMeeting && meetingId && onViewAttendance && (
+            <button
+              onClick={() => onViewAttendance(meetingId, title)}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-medium dark:bg-emerald-500/10 bg-emerald-50 border dark:border-emerald-500/30 border-emerald-200 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all"
+            >
+              <Users size={13} />
+              <span>Attendance</span>
+            </button>
           )}
 
-          <div className="actions-row">
-            {/* Primary CTA */}
+          {/* Delete Button (Recordings) */}
+          {showDeleteButton && onDelete && (
             <button
-              className={cn("btn-primary", isLive && "btn-primary-live")}
-              onClick={handleClick}
+              onClick={onDelete}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-medium dark:bg-rose-500/10 bg-rose-50 border dark:border-rose-500/30 border-rose-200 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all ml-auto"
             >
-              {isLive ? (
-                <>
-                  <span className="relative flex h-2 w-2 mr-1">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                  </span>
-                  <span>Join Live Class</span>
-                </>
-              ) : (
-                <>
-                  {buttonIcon1
-                    ? <img src={buttonIcon1} alt="" width={15} height={15} />
-                    : <Play size={13} />
-                  }
-                  <span>{buttonText || 'Start'}</span>
-                </>
-              )}
+              <Trash2 size={13} />
+              <span>Delete</span>
             </button>
-
-            {/* Copy Link */}
-            <button
-              className="btn-ghost"
-              onClick={() => {
-                navigator.clipboard.writeText(link);
-                toast({ title: "Link Copied" });
-              }}
-            >
-              <Copy size={13} />
-              Copy Link
-            </button>
-
-            {/* View Attendance — previous meetings only */}
-            {isPreviousMeeting && meetingId && onViewAttendance && (
-              <button
-                className="btn-attendance"
-                onClick={() => onViewAttendance(meetingId, title)}
-              >
-                <Users size={13} />
-                Attendance
-              </button>
-            )}
-
-            {/* Delete — recordings only */}
-            {showDeleteButton && onDelete && (
-              <button className="btn-danger" onClick={onDelete}>
-                <Trash2 size={13} />
-                Delete
-              </button>
-            )}
-          </div>
-        </article>
-      </section>
-    </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
