@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import {
-  CallControls,
+  ToggleAudioPublishingButton,
+  ToggleVideoPublishingButton,
+  ScreenShareButton,
+  ReactionsButton,
+  RecordCallButton,
+  CancelCallButton,
   CallStatsButton,
   CallingState,
   PaginatedGridLayout,
   SpeakerLayout,
   useCallStateHooks,
+  useCall,
 } from "@stream-io/video-react-sdk";
 import { useSearchParams } from "react-router-dom";
 import { useToast } from "./ui/use-toast";
@@ -19,7 +25,6 @@ import {
   CustomVideoPlaceholder,
   CustomParticipantViewUI,
 } from "./CustomVideoTileUI";
-import { useCall } from "@stream-io/video-react-sdk";
 import {
   Users,
   MessageSquare,
@@ -235,7 +240,21 @@ const MeetingRoomContent = () => {
   const [isEndedByHost, setIsEndedByHost] = useState(false);
   const [endedByName, setEndedByName] = useState<string | undefined>();
 
-  // Live ticking clock
+    // Ensure local video & audio are active upon entering joined call (unless user opted into stealth join)
+  useEffect(() => {
+    if (!call || callingState !== CallingState.JOINED) return;
+    const isJoinMuted = window.sessionStorage.getItem("join_muted") === "true";
+    if (!isJoinMuted) {
+      if (call.camera.state.status !== "enabled") {
+        call.camera.enable().catch((e) => console.warn("MeetingRoom camera auto-enable warning:", e));
+      }
+      if (call.microphone.state.status !== "enabled") {
+        call.microphone.enable().catch((e) => console.warn("MeetingRoom mic auto-enable warning:", e));
+      }
+    }
+  }, [call, callingState]);
+
+// Live ticking clock
   const [time, setTime] = useState(
     new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
   );
@@ -455,45 +474,73 @@ const MeetingRoomContent = () => {
         .str-video__participant-details {
           display: none !important;
         }
-        /* Style Stream's video tile container with Cyberpunk border */
+        /* Style Stream's video tile container with Cyberpunk border & 16:9 ratio */
         .str-video__participant-view {
-          border-radius: 1rem !important;
-          border: 1px solid rgba(0, 180, 255, 0.2) !important;
+          border-radius: 1.25rem !important;
+          border: 1px solid rgba(0, 180, 255, 0.25) !important;
           overflow: hidden !important;
           background: #030a16 !important;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+          aspect-ratio: 16/9 !important;
         }
-        /* Stream's call controls buttons integration */
-        .str-video__call-controls {
-          gap: 0.35rem !important;
+        .str-video__participant-view video,
+        .str-video__participant-view .str-video__video {
+          object-fit: cover !important;
+          border-radius: 1.25rem !important;
+        }
+        /* Stream's grid layout centering and full widescreen fitting */
+        .str-video__paginated-grid-layout {
+          height: 100% !important;
+          width: 100% !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        .str-video__paginated-grid-layout .str-video__paginated-grid-layout__group {
+          max-width: min(94vw, 1400px) !important;
+          max-height: calc(100vh - 160px) !important;
+          width: 100% !important;
+          height: 100% !important;
           display: flex !important;
           align-items: center !important;
+          justify-content: center !important;
+          gap: 1rem !important;
+          padding: 0 !important;
         }
-        .str-video__call-controls .str-video__composite-button,
-        .str-video__call-controls .str-video__circle-button,
-        .str-video__call-controls .str-video__call-controls__button {
+        .str-video__paginated-grid-layout .str-video__paginated-grid-layout__group.str-video__paginated-grid-layout--one .str-video__participant-view {
+          width: 100% !important;
+          max-width: min(88vw, 1200px) !important;
+          max-height: calc(100vh - 170px) !important;
+          aspect-ratio: 16/9 !important;
+          height: auto !important;
+          margin: auto !important;
+        }
+        /* Stream composite & circle buttons styling for dock */
+        .str-video__composite-button,
+        .str-video__circle-button,
+        .str-video__call-controls__button {
           background: #0e1e33 !important;
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
           border-radius: 0.75rem !important;
           color: #e0f2fe !important;
           transition: all 0.2s ease !important;
         }
-        .str-video__call-controls .str-video__composite-button:hover,
-        .str-video__call-controls .str-video__circle-button:hover,
-        .str-video__call-controls .str-video__call-controls__button:hover {
+        .str-video__composite-button:hover,
+        .str-video__circle-button:hover,
+        .str-video__call-controls__button:hover {
           background: #152c4a !important;
           border-color: rgba(0, 180, 255, 0.45) !important;
           color: #38bdf8 !important;
           box-shadow: 0 0 12px rgba(0, 180, 255, 0.25) !important;
         }
-        .str-video__call-controls .str-video__cancel-call-button,
-        .str-video__call-controls button[data-testid="cancel-call-button"] {
+        .str-video__cancel-call-button,
+        button[data-testid="cancel-call-button"] {
           background: rgba(225, 29, 72, 0.2) !important;
           border: 1px solid rgba(244, 63, 94, 0.45) !important;
           color: #fb7185 !important;
+          border-radius: 0.75rem !important;
         }
-        .str-video__call-controls .str-video__cancel-call-button:hover,
-        .str-video__call-controls button[data-testid="cancel-call-button"]:hover {
+        .str-video__cancel-call-button:hover,
+        button[data-testid="cancel-call-button"]:hover {
           background: rgba(225, 29, 72, 0.4) !important;
           border-color: rgba(244, 63, 94, 0.75) !important;
           box-shadow: 0 0 16px rgba(244, 63, 94, 0.45) !important;
@@ -503,7 +550,7 @@ const MeetingRoomContent = () => {
       {/* ========================================================
           FLAGSHIP CYBER TOP COCKPIT BAR
       ======================================================== */}
-      <header className="fixed top-2.5 inset-x-2.5 sm:inset-x-4 z-30 flex items-center justify-between gap-3 pointer-events-none">
+      <header className="fixed top-3 left-3 right-3 sm:left-6 sm:right-6 z-30 flex items-center justify-between gap-3 pointer-events-none">
         {/* Left: Meeting Branding & Title Pill */}
         <div className="pointer-events-auto flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-[#040e1c]/90 backdrop-blur-xl border border-[rgba(0,180,255,0.22)] shadow-lg max-w-sm sm:max-w-md">
           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
@@ -684,170 +731,185 @@ const MeetingRoomContent = () => {
       )}
 
       {/* ========================================================
-          UNIFIED BOTTOM COCKPIT DOCK (Single Sleek Bar, No 2nd Row!)
+          UNIFIED BOTTOM COCKPIT DOCK (Single Sleek Bar, Industry-Standard Groups)
       ======================================================== */}
-      <div className="fixed bottom-2.5 inset-x-0 z-40 flex items-center justify-center px-2 pointer-events-none">
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-auto px-3 py-1.5 rounded-2xl bg-[#040e1c]/90 backdrop-blur-2xl border border-[rgba(0,180,255,0.25)] shadow-[0_8px_32px_rgba(0,0,0,0.7)] max-w-[98vw] overflow-x-auto no-scrollbar">
+      <div className="fixed bottom-3 inset-x-0 z-40 flex items-center justify-center px-2 pointer-events-none">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-auto px-3.5 py-2 rounded-2xl bg-[#040e1c]/95 backdrop-blur-2xl border border-[rgba(0,180,255,0.28)] shadow-[0_10px_40px_rgba(0,0,0,0.75)] max-w-[98vw] overflow-x-auto no-scrollbar">
 
-          {/* 1. Core Media Controls (Mic, Cam, Screen Share, Reactions, Record) */}
-          <CallControls onLeave={() => navigate(`/`)} />
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/10 shrink-0 hidden sm:block" />
-
-          {/* 2. Classroom Tools (Layout, Stats, Whiteboard, Hand Raise) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="cursor-pointer rounded-xl bg-[#0e1e33] p-2 hover:bg-[#152c4a] text-neutral-300 hover:text-cyan-300 transition-colors border border-white/10 shrink-0 shadow-sm"
-                title="Switch Video Layout"
-              >
-                <LayoutList size={16} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="border-[rgba(0,180,255,0.2)] bg-[#040e1c] text-white rounded-xl">
-              {["Grid", "Speaker-Left", "Speaker-Right"].map((item, index) => (
-                <div key={index}>
-                  <DropdownMenuItem
-                    className="cursor-pointer hover:bg-cyan-500/20 text-xs py-1.5"
-                    onClick={() =>
-                      setLayout(item.toLowerCase() as CallLayoutType)
-                    }
-                  >
-                    {item}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="border-white/10" />
-                </div>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <CallStatsButton />
-
-          {/* Whiteboard Button */}
-          <button
-            onClick={() => setShowWhiteboard((prev) => !prev)}
-            className={cn(
-              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
-              showWhiteboard
-                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
-            )}
-            title="Toggle Collaborative Whiteboard"
-          >
-            <Edit size={16} />
-            <span className="hidden xl:inline text-xs font-medium">Board</span>
-          </button>
-
-          {/* ✋ Raise Hand Button */}
-          <button
-            onClick={toggleHandRaise}
-            className={cn(
-              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
-              isHandRaised
-                ? "bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.5)] animate-pulse"
-                : "bg-[#0e1e33] text-neutral-300 hover:text-amber-300 hover:bg-[#152c4a] border-white/10"
-            )}
-            title={
-              isHandRaised
-                ? "Lower your hand"
-                : "Raise your hand to ask a question"
-            }
-          >
-            <span className="text-sm leading-none">✋</span>
-            <span className="hidden xl:inline text-xs font-medium">
-              {isHandRaised ? "Raised" : "Hand"}
-            </span>
-          </button>
+          {/* 1. Core Media Controls (Mic, Cam) */}
+          <div className="flex items-center gap-1 shrink-0">
+            <ToggleAudioPublishingButton />
+            <ToggleVideoPublishingButton />
+          </div>
 
           {/* Divider */}
-          <div className="w-px h-6 bg-white/10 shrink-0 hidden sm:block" />
+          <div className="w-px h-6 bg-white/10 shrink-0" />
 
-          {/* 3. Collaboration Side Drawers (Chat, People, AI Tutor, Code) */}
-          {/* Chat Button */}
-          <button
-            onClick={() => handleToggleDock("chat")}
-            className={cn(
-              "relative cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
-              isDockOpen && activeDockTab === "chat"
-                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
-            )}
-            title="Toggle Live Chat"
-          >
-            <MessageSquare size={16} />
-            <span className="hidden xl:inline text-xs font-medium">Chat</span>
-            {messages.length > 0 && (
-              <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-400 text-[#020b16] px-1 text-[9px] font-bold">
-                {messages.length}
+          {/* 2. Collaboration & Sharing (Screen Share, Whiteboard, Hand, Reactions) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <ScreenShareButton />
+
+            {/* Whiteboard Button */}
+            <button
+              onClick={() => setShowWhiteboard((prev) => !prev)}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
+                showWhiteboard
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title="Toggle Collaborative Whiteboard"
+            >
+              <Edit size={16} />
+              <span className="hidden xl:inline text-xs font-medium">Board</span>
+            </button>
+
+            {/* Hand Raise Button */}
+            <button
+              onClick={toggleHandRaise}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
+                isHandRaised
+                  ? "bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.5)] animate-pulse"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-amber-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title={isHandRaised ? "Lower your hand" : "Raise your hand to ask a question"}
+            >
+              <span className="text-sm leading-none">✋</span>
+              <span className="hidden xl:inline text-xs font-medium">
+                {isHandRaised ? "Raised" : "Hand"}
               </span>
-            )}
-          </button>
+            </button>
 
-          {/* Participants Button */}
-          <button
-            onClick={() => handleToggleDock("participants")}
-            className={cn(
-              "relative cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
-              isDockOpen && activeDockTab === "participants"
-                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
-            )}
-            title="View Stage Participants"
-          >
-            <Users size={16} />
-            <span className="hidden xl:inline text-xs font-medium">People</span>
-            {raisedHands.size > 0 ? (
-              <span
-                className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-400 text-black px-1 text-[9px] font-extrabold animate-pulse"
-                title={`${raisedHands.size} hand(s) raised`}
-              >
-                ✋ {raisedHands.size}
-              </span>
-            ) : totalParticipantsCount > 0 ? (
-              <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 px-1 text-[9px] font-bold">
-                {totalParticipantsCount}
-              </span>
-            ) : null}
-          </button>
+            <ReactionsButton />
+          </div>
 
-          {/* AI Assistant Button */}
-          <button
-            onClick={() => handleToggleDock("ai")}
-            className={cn(
-              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
-              isDockOpen && activeDockTab === "ai"
-                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
-            )}
-            title="AI Study Tutor"
-          >
-            <Bot size={16} />
-            <span className="hidden xl:inline text-xs font-medium">AI</span>
-          </button>
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 shrink-0" />
 
-          {/* GitHub Code Explorer Button */}
-          <button
-            onClick={() => handleToggleDock("github")}
-            className={cn(
-              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
-              isDockOpen && activeDockTab === "github"
-                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
-            )}
-            title="GitHub Repository Code Review"
-          >
-            <Github size={16} />
-            <span className="hidden xl:inline text-xs font-medium">Code</span>
-          </button>
+          {/* 3. Sliding Drawers (Chat, People, AI Tutor, Code Importer) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Chat Drawer Toggle */}
+            <button
+              onClick={() => handleToggleDock("chat")}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0 relative",
+                isDockOpen && activeDockTab === "chat"
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title="Toggle Live Chat"
+            >
+              <MessageSquare size={16} />
+              <span className="hidden xl:inline text-xs font-medium">Chat</span>
+              {messages.length > 0 && (
+                <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-400 text-[#020b16] px-1 text-[9px] font-bold">
+                  {messages.length}
+                </span>
+              )}
+            </button>
 
-          {/* 4. Host End Call For All Button (Inline in the same row!) */}
-          {!isPersonalRoom && (
-            <>
-              <div className="w-px h-6 bg-white/10 shrink-0 hidden sm:block" />
-              <EndCallButton />
-            </>
-          )}
+            {/* Participants Drawer Toggle */}
+            <button
+              onClick={() => handleToggleDock("participants")}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
+                isDockOpen && activeDockTab === "participants"
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title="View Stage Participants"
+            >
+              <Users size={16} />
+              <span className="hidden xl:inline text-xs font-medium">People</span>
+              {raisedHands.size > 0 ? (
+                <span
+                  className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-400 text-black px-1 text-[9px] font-extrabold animate-pulse"
+                  title={`${raisedHands.size} hand(s) raised`}
+                >
+                  ✋ {raisedHands.size}
+                </span>
+              ) : totalParticipantsCount > 0 ? (
+                <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 px-1 text-[9px] font-bold">
+                  {totalParticipantsCount}
+                </span>
+              ) : null}
+            </button>
+
+            {/* AI Assistant Button */}
+            <button
+              onClick={() => handleToggleDock("ai")}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
+                isDockOpen && activeDockTab === "ai"
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title="AI Study Tutor"
+            >
+              <Bot size={16} />
+              <span className="hidden xl:inline text-xs font-medium">AI</span>
+            </button>
+
+            {/* GitHub Code Explorer Button */}
+            <button
+              onClick={() => handleToggleDock("github")}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
+                isDockOpen && activeDockTab === "github"
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title="GitHub Repository Code Review"
+            >
+              <Github size={16} />
+              <span className="hidden xl:inline text-xs font-medium">Code</span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 shrink-0" />
+
+          {/* 4. Controls & Layout Settings */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="cursor-pointer rounded-xl bg-[#0e1e33] p-2 hover:bg-[#152c4a] text-neutral-300 hover:text-cyan-300 transition-colors border border-white/10 shrink-0 shadow-sm"
+                  title="Switch Video Layout"
+                >
+                  <LayoutList size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="border-[rgba(0,180,255,0.2)] bg-[#040e1c] text-white rounded-xl">
+                {["Grid", "Speaker-Left", "Speaker-Right"].map((item, index) => (
+                  <div key={index}>
+                    <DropdownMenuItem
+                      className="cursor-pointer hover:bg-cyan-500/20 text-xs py-1.5"
+                      onClick={() =>
+                        setLayout(item.toLowerCase() as CallLayoutType)
+                      }
+                    >
+                      {item}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="border-white/10" />
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <CallStatsButton />
+            <RecordCallButton />
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 shrink-0" />
+
+          {/* 5. Call Termination Group (Leave & End for All) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <CancelCallButton onLeave={() => navigate("/")} />
+            {!isPersonalRoom && <EndCallButton />}
+          </div>
 
         </div>
       </div>
