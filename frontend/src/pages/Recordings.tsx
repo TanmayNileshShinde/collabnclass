@@ -1,268 +1,183 @@
-import CallList from '@/components/CallList';
+import CallList from "@/components/CallList";
+import { useGetCalls } from "@/hooks/useGetCalls";
+import { Video, Film } from "lucide-react";
+
+// Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home)
+const OceanWaves = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    {/* Dark Theme Waves */}
+    <svg
+      className="absolute bottom-0 left-0 w-full transition-opacity duration-300 dark:opacity-100 opacity-0"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ height: "100px" }}
+    >
+      <path
+        d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
+        fill="rgba(0, 100, 180, 0.07)"
+        style={{ animation: "waveMove 8s ease-in-out infinite" }}
+      />
+      <path
+        d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
+        fill="rgba(0, 150, 220, 0.05)"
+        style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
+      />
+    </svg>
+
+    {/* Light Theme Waves */}
+    <svg
+      className="absolute bottom-0 left-0 w-full transition-opacity duration-300 dark:opacity-0 opacity-100"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ height: "100px" }}
+    >
+      <path
+        d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
+        fill="rgba(2, 132, 199, 0.08)"
+        style={{ animation: "waveMove 8s ease-in-out infinite" }}
+      />
+      <path
+        d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
+        fill="rgba(14, 165, 233, 0.06)"
+        style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
+      />
+    </svg>
+
+    <style>{`
+      @keyframes waveMove {
+        0%, 100% { d: path("M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"); }
+        50% { d: path("M0,40 C180,70 360,10 540,50 C720,90 900,10 1080,50 C1260,90 1380,30 1440,45 L1440,120 L0,120 Z"); }
+      }
+      @keyframes floatBubble {
+        0% { transform: translateY(0) scale(1); opacity: 0.7; }
+        50% { transform: translateY(-40px) scale(1.1); opacity: 1; }
+        100% { transform: translateY(-80px) scale(0.8); opacity: 0; }
+      }
+    `}</style>
+  </div>
+);
+
+// Floating particle bubbles
+const Bubbles = () => {
+  const bubbles = [
+    { size: 5, left: "15%", delay: "0s", duration: "6s", bottom: "10%" },
+    { size: 4, left: "35%", delay: "1.5s", duration: "8s", bottom: "5%" },
+    { size: 6, left: "62%", delay: "3s", duration: "7s", bottom: "15%" },
+    { size: 3, left: "82%", delay: "0.8s", duration: "9s", bottom: "8%" },
+  ];
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+      {bubbles.map((b, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: b.size,
+            height: b.size,
+            left: b.left,
+            bottom: b.bottom,
+            background: `radial-gradient(circle at 30% 30%, rgba(150,220,255,0.9), rgba(0,150,220,0.3))`,
+            border: "1px solid rgba(0,200,255,0.4)",
+            boxShadow: "0 0 6px rgba(0,200,255,0.4)",
+            animation: `floatBubble ${b.duration} ${b.delay} ease-in infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Scanlines overlay for cyber depth
+const Scanlines = () => (
+  <div
+    className="absolute inset-0 pointer-events-none overflow-hidden transition-opacity duration-300 dark:opacity-[0.03] opacity-0"
+    style={{
+      backgroundImage:
+        "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,200,255,1) 2px, rgba(0,200,255,1) 3px)",
+      backgroundSize: "100% 3px",
+    }}
+  />
+);
 
 const Recordings = () => {
+  const { callRecordings } = useGetCalls();
+
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+    <div className="relative min-h-[calc(100vh-80px)] w-full overflow-hidden transition-colors duration-300 dark:bg-[#020813] bg-slate-50 flex flex-col gap-8 pb-16">
+      {/* Background Atmosphere */}
+      <OceanWaves />
+      <Bubbles />
+      <Scanlines />
 
-        .rec-page {
-          font-family: 'DM Sans', sans-serif;
-          position: relative;
-          display: flex;
-          width: 100%;
-          height: 100%;
-          flex-direction: column;
-          gap: 36px;
-          padding: 44px 40px;
-          background: linear-gradient(155deg, #030b16 0%, #050f1e 55%, #020810 100%);
-          min-height: 100vh;
-          overflow: hidden;
-          color: #deeeff;
-        }
+      {/* Ambient Orbs */}
+      <div
+        className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none blur-3xl transition-opacity duration-300 dark:opacity-25 opacity-10"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(0, 180, 255, 0.4) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full pointer-events-none blur-3xl transition-opacity duration-300 dark:opacity-20 opacity-10"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(2, 132, 199, 0.35) 0%, transparent 70%)",
+        }}
+      />
 
-        /* Atmosphere */
-        .rec-orb-1 {
-          position: fixed;
-          top: -160px; right: -120px;
-          width: 600px; height: 600px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 100, 255, 0.055) 0%, transparent 65%);
-          pointer-events: none; z-index: 0;
-        }
-        .rec-orb-2 {
-          position: fixed;
-          bottom: -100px; left: -80px;
-          width: 420px; height: 420px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(180, 0, 80, 0.03) 0%, transparent 65%);
-          pointer-events: none; z-index: 0;
-        }
-        /* subtle diagonal beam */
-        .rec-beam {
-          position: fixed;
-          top: 0; right: 0;
-          width: 2px; height: 60vh;
-          background: linear-gradient(180deg, transparent, rgba(0,160,255,0.08), transparent);
-          transform: rotate(20deg) translateX(-200px);
-          pointer-events: none; z-index: 0;
-        }
-        .rec-scanlines {
-          position: fixed; inset: 0;
-          pointer-events: none; z-index: 0;
-          background-image: repeating-linear-gradient(
-            0deg, transparent, transparent 2px,
-            rgba(0,0,0,0.025) 2px, rgba(0,0,0,0.025) 4px
-          );
-        }
+      <div className="relative z-10 flex flex-col gap-8 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        {/* ========================================================
+            HERO CYBER COMMAND BANNER
+        ======================================================== */}
+        <section className="relative overflow-hidden rounded-3xl p-6 sm:p-8 lg:p-10 border transition-all duration-300 dark:bg-gradient-to-br dark:from-[#040e1c]/90 dark:via-[#07162b]/85 dark:to-[#020813]/95 bg-gradient-to-br from-white/95 via-sky-50/90 to-slate-100/90 backdrop-blur-2xl dark:border-[rgba(0,180,255,0.22)] border-sky-200/90 shadow-[0_12px_44px_rgba(0,0,0,0.25)]">
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80" />
 
-        
-        :not(.dark) .rec-page {
-          background: linear-gradient(155deg, #f8fafc 0%, #f0f7fe 55%, #e2e8f0 100%) !important;
-          color: #0f172a !important;
-        }
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+            {/* Left Titles */}
+            <div className="flex flex-col gap-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border dark:border-cyan-500/30 border-sky-400/40 dark:bg-cyan-950/40 bg-sky-100/80 dark:text-cyan-300 text-sky-700 shadow-sm w-fit">
+                <Film className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Media Vault • Cloud Recordings</span>
+              </div>
 
-        :not(.dark) .rec-title {
-          background: linear-gradient(135deg, #091e42 0%, #0284c7 50%, #0369a1 100%) !important;
-          -webkit-background-clip: text !important;
-          -webkit-text-fill-color: transparent !important;
-        }
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold font-syne tracking-tight dark:text-white text-slate-900 leading-[1.15]">
+                Classroom{" "}
+                <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent">
+                  Recordings
+                </span>
+              </h1>
 
-        :not(.dark) .rec-subtitle {
-          color: #475569 !important;
-        }
-
-        .rec-content {
-          position: relative;
-          z-index: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 36px;
-          height: 100%;
-        }
-
-        /* ── Header ── */
-        .rec-header { display: flex; flex-direction: column; gap: 10px; }
-
-        .rec-tag {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          width: fit-content;
-          padding: 4px 14px 4px 8px;
-          border-radius: 30px;
-          background: rgba(180, 0, 60, 0.08);
-          border: 1px solid rgba(220, 0, 80, 0.18);
-        }
-        .rec-tag-icon {
-          width: 16px; height: 16px;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .rec-tag-dot {
-          width: 7px; height: 7px;
-          border-radius: 50%;
-          background: #ff3366;
-          box-shadow: 0 0 8px rgba(255, 50, 100, 0.8);
-          animation: rec-blink 1.8s ease-in-out infinite;
-        }
-        @keyframes rec-blink {
-          0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(255,50,100,0.8); }
-          50%       { opacity: 0.4; box-shadow: 0 0 4px rgba(255,50,100,0.3); }
-        }
-        .rec-tag-text {
-          font-size: 0.7rem;
-          font-weight: 500;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: rgba(255, 100, 140, 0.85);
-        }
-
-        .rec-title-row {
-          display: flex;
-          align-items: baseline;
-          gap: 16px;
-        }
-        .rec-title {
-          font-family: 'Syne', sans-serif;
-          font-size: clamp(1.9rem, 3.5vw, 2.8rem);
-          font-weight: 800;
-          letter-spacing: -0.035em;
-          line-height: 1.1;
-          margin: 0;
-          background: linear-gradient(135deg, #e8f6ff 0%, #8ecfff 45%, #3a8ee8 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .rec-subtitle {
-          font-size: 0.88rem;
-          font-weight: 300;
-          font-style: italic;
-          color: rgba(100, 160, 220, 0.55);
-          letter-spacing: 0.01em;
-          margin: 0;
-        }
-
-        .rec-divider {
-          width: 100%;
-          height: 1px;
-          background: linear-gradient(90deg, rgba(0, 150, 255, 0.22), rgba(0, 100, 200, 0.06), transparent);
-          position: relative;
-          margin-top: 4px;
-        }
-        .rec-divider::before {
-          content: '';
-          position: absolute;
-          left: 0; top: -1px;
-          width: 80px; height: 3px;
-          border-radius: 2px;
-          background: linear-gradient(90deg, rgba(255, 50, 100, 0.7), rgba(0, 140, 255, 0.5), transparent);
-        }
-
-        /* ── Stat chips ── */
-        .rec-stats {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .rec-stat-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 5px 12px;
-          border-radius: 8px;
-          background: rgba(0, 60, 130, 0.12);
-          border: 1px solid rgba(0, 120, 255, 0.12);
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: rgba(100, 180, 255, 0.7);
-          letter-spacing: 0.04em;
-        }
-        .rec-stat-chip svg {
-          opacity: 0.65;
-        }
-
-        /* ── List area ── */
-        .rec-list-wrap {
-          flex: 1;
-          overflow-y: auto;
-          padding-right: 4px;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(0, 120, 255, 0.18) transparent;
-        }
-        .rec-list-wrap::-webkit-scrollbar {
-          width: 4px;
-        }
-        .rec-list-wrap::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .rec-list-wrap::-webkit-scrollbar-thumb {
-          background: rgba(0, 130, 255, 0.2);
-          border-radius: 4px;
-        }
-        .rec-list-wrap::-webkit-scrollbar-thumb:hover {
-          background: rgba(0, 150, 255, 0.35);
-        }
-
-        /* ── Animations ── */
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .rec-header    { animation: fadeUp 0.48s ease both; }
-        .rec-stats     { animation: fadeUp 0.5s ease 0.07s both; }
-        .rec-list-wrap { animation: fadeUp 0.52s ease 0.14s both; }
-      `}</style>
-
-      <div className="rec-page">
-        <div className="rec-orb-1" />
-        <div className="rec-orb-2" />
-        <div className="rec-beam" />
-        <div className="rec-scanlines" />
-
-        <div className="rec-content">
-
-          {/* Header */}
-          <header className="rec-header">
-            <div className="rec-tag">
-              <span className="rec-tag-icon"><span className="rec-tag-dot" /></span>
-              <span className="rec-tag-text">Recorded Sessions</span>
+              <p className="text-sm sm:text-base dark:text-neutral-300 text-slate-600 font-normal leading-relaxed">
+                Stream cloud lecture recordings, replay whiteboarding sessions, and manage your video media archives.
+              </p>
             </div>
 
-            <div className="rec-title-row">
-              <h1 className="rec-title">Recordings</h1>
-            </div>
-
-            <p className="rec-subtitle">Replay, review, and share your captured meetings</p>
-            <div className="rec-divider" />
-          </header>
-
-          {/* Stat chips */}
-          <div className="rec-stats">
-            <div className="rec-stat-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              All time
-            </div>
-            <div className="rec-stat-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15V19A2 2 0 0 1 19 21H5A2 2 0 0 1 3 19V15"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Downloadable
-            </div>
-            <div className="rec-stat-chip">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              Shareable links
+            {/* Right Telemetry Badge */}
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl shrink-0">
+              <div className="p-2.5 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
+                <Video className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
+                  {callRecordings?.length ?? 0}
+                </span>
+                <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
+                  Recorded Sessions
+                </span>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* List */}
-          <div className="rec-list-wrap">
-            <CallList type="recordings" />
-          </div>
-
-        </div>
+        {/* Recordings List */}
+        <section className="relative w-full">
+          <CallList type="recordings" />
+        </section>
       </div>
-    </>
+    </div>
   );
 };
 
