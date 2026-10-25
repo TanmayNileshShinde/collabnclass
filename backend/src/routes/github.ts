@@ -7,6 +7,35 @@ dotenv.config();
 
 const router = Router();
 
+// In-memory cache for GitHub API requests to protect against unauthenticated 60 req/hr rate limits
+interface CacheEntry {
+  data: any;
+  expiresAt: number;
+}
+
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache TTL
+const githubCache = new Map<string, CacheEntry>();
+
+const getCached = (key: string): any | null => {
+  const entry = githubCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    githubCache.delete(key);
+    return null;
+  }
+  return entry.data;
+};
+
+const setCache = (key: string, data: any): void => {
+  if (githubCache.size > 1000) {
+    const now = Date.now();
+    for (const [k, v] of githubCache.entries()) {
+      if (now > v.expiresAt) githubCache.delete(k);
+    }
+  }
+  githubCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+};
+
 // Get GitHub token from environment (optional but recommended for higher rate limits)
 const getGitHubToken = () => {
   return (
@@ -22,9 +51,31 @@ if (GITHUB_TOKEN) {
   );
 } else {
   console.warn(
-    "⚠️  GitHub token not found. Using unauthenticated requests (60 req/hour limit). Set GITHUB_TOKEN in environment variables.",
+    "⚠️  GitHub token not found. Using unauthenticated requests with in-memory caching. Set GITHUB_TOKEN in environment variables for 5,000 req/hr.",
   );
 }
+
+// Format error handling with 403 rate limit detection
+const handleGitHubError = (res: any, error: any, defaultMsg: string) => {
+  console.error(defaultMsg, error);
+  const statusCode = error.response?.status || 500;
+  const isRateLimit =
+    statusCode === 403 &&
+    (error.response?.headers?.["x-ratelimit-remaining"] === "0" ||
+      (typeof error.response?.data?.message === "string" &&
+        error.response.data.message.toLowerCase().includes("rate limit")));
+
+  const errorMessage = isRateLimit
+    ? "GitHub API rate limit exceeded (60 requests/hr unauthenticated limit). Cached entries will continue to serve. Please wait a few moments or configure GITHUB_TOKEN in backend environment variables."
+    : error.response?.data?.message || error.message || defaultMsg;
+
+  res.status(statusCode).json({
+    error: errorMessage,
+    isRateLimit,
+    retryAfter: error.response?.headers?.["x-ratelimit-reset"],
+    details: error.response?.data || error.message,
+  });
+};
 
 // middleware to verify clerk auth
 const verifyAuth = async (req: any, res: any, next: any) => {
@@ -60,17 +111,22 @@ const verifyAuth = async (req: any, res: any, next: any) => {
   }
 };
 
-// Get repository contents (this must come first)
+// Get repository contents (with wildcard path)
 router.get(
   "/repo/:owner/:repo/contents/*",
   verifyAuth,
-  async (req: any, res) => {
+  async (req: any, res: any) => {
     try {
       const { owner, repo } = req.params;
       const path = req.params[0] || ""; // Get the rest of the path
-      const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const cacheKey = `contents:${owner}:${repo}:${path}`;
 
-      // Build headers with optional GitHub token for authenticated requests
+      const cached = getCached(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
       const headers: Record<string, string> = {
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "CollabClass-App",
@@ -79,37 +135,29 @@ router.get(
       const githubToken = getGitHubToken();
       if (githubToken) {
         headers["Authorization"] = `Bearer ${githubToken}`;
-      } else {
-        console.warn(
-          `GitHub API request without authentication: ${githubApiUrl}`,
-        );
       }
 
       const response = await axios.get(githubApiUrl, { headers });
-
+      setCache(cacheKey, response.data);
       res.json(response.data);
     } catch (error: any) {
-      console.error("Error fetching repository contents:", error);
-      const statusCode = error.response?.status || 500;
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch repository contents";
-      res.status(statusCode).json({
-        error: errorMessage,
-        details: error.response?.data || error.message,
-      });
+      handleGitHubError(res, error, "Failed to fetch repository contents");
     }
   },
 );
 
 // Get repository root contents
-router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res) => {
+router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res: any) => {
   try {
     const { owner, repo } = req.params;
-    const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+    const cacheKey = `contents:${owner}:${repo}:root`;
 
-    // Build headers with optional GitHub token for authenticated requests
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
       "User-Agent": "CollabClass-App",
@@ -118,36 +166,28 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res) => {
     const githubToken = getGitHubToken();
     if (githubToken) {
       headers["Authorization"] = `Bearer ${githubToken}`;
-    } else {
-      console.warn(
-        `GitHub API request without authentication: ${githubApiUrl}`,
-      );
     }
 
     const response = await axios.get(githubApiUrl, { headers });
-
+    setCache(cacheKey, response.data);
     res.json(response.data);
   } catch (error: any) {
-    console.error("Error fetching repository root contents:", error);
-    const statusCode = error.response?.status || 500;
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to fetch repository root contents";
-    res.status(statusCode).json({
-      error: errorMessage,
-      details: error.response?.data || error.message,
-    });
+    handleGitHubError(res, error, "Failed to fetch repository root contents");
   }
 });
 
 // Get repository information (this must come after the contents route)
-router.get("/repo/:owner/:repo", verifyAuth, async (req: any, res) => {
+router.get("/repo/:owner/:repo", verifyAuth, async (req: any, res: any) => {
   try {
     const { owner, repo } = req.params;
-    const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+    const cacheKey = `info:${owner}:${repo}`;
 
-    // Build headers with optional GitHub token for authenticated requests
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}`;
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
       "User-Agent": "CollabClass-App",
@@ -156,26 +196,13 @@ router.get("/repo/:owner/:repo", verifyAuth, async (req: any, res) => {
     const githubToken = getGitHubToken();
     if (githubToken) {
       headers["Authorization"] = `Bearer ${githubToken}`;
-    } else {
-      console.warn(
-        `GitHub API request without authentication: ${githubApiUrl}`,
-      );
     }
 
     const response = await axios.get(githubApiUrl, { headers });
-
+    setCache(cacheKey, response.data);
     res.json(response.data);
   } catch (error: any) {
-    console.error("Error fetching repository info:", error);
-    const statusCode = error.response?.status || 500;
-    const errorMessage =
-      error.response?.data?.message ||
-      error.message ||
-      "Failed to fetch repository information";
-    res.status(statusCode).json({
-      error: errorMessage,
-      details: error.response?.data || error.message,
-    });
+    handleGitHubError(res, error, "Failed to fetch repository information");
   }
 });
 

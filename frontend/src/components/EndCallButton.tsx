@@ -24,6 +24,15 @@ const EndCallButton = () => {
   if (!isMeetingOwner) return null;
 
   const endCall = async () => {
+    try {
+      await call.sendCustomEvent({
+        type: 'meeting-ended-by-host',
+        endedAt: new Date().toISOString(),
+        endedBy: localParticipant?.name || 'Classroom Host',
+      });
+    } catch (e) {
+      console.warn('Failed to broadcast end-call event:', e);
+    }
     await call.endCall();
     navigate('/');
   };
@@ -36,4 +45,3 @@ const EndCallButton = () => {
 };
 
 export default EndCallButton;
-
