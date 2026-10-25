@@ -205,56 +205,93 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
 
   const isHost = call?.state.createdBy?.id === userId;
 
-  useEffect(() => {
-    const importedRepo = call?.state.custom?.importedRepo;
-    if (importedRepo) {
-      setRepoInfo(importedRepo.info);
-      setFileTree(importedRepo.fileTree || []);
-    }
-  }, [call]);
-
   const parseGitHubUrl = (url: string) => {
     const match = url.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
     if (match) return { owner: match[1], repo: match[2] };
     return null;
   };
 
-  const fetchRepoContents = async (
-    owner: string,
-    repo: string,
-    path: string = ''
-  ): Promise<GitHubFileItem[]> => {
-    const token = await getToken();
-    const url = `${beurl}/api/github/repo/${owner}/${repo}/contents${path ? '/' + path : ''}`;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.details || errorData.message || 'Failed to fetch repository contents');
-    }
-    const data = await response.json();
-    if (Array.isArray(data)) {
-      return data.map((item: any) => ({
-        name: item.name,
-        type: item.type,
-        path: item.path,
-        download_url: item.download_url,
-        url: item.url,
-      }));
-    }
-    return [];
-  };
+  const fetchRepoContents = useCallback(
+    async (
+      owner: string,
+      repo: string,
+      path: string = ''
+    ): Promise<GitHubFileItem[]> => {
+      const token = await getToken();
+      const url = `${beurl}/api/github/repo/${owner}/${repo}/contents${path ? '/' + path : ''}`;
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || errorData.message || 'Failed to fetch repository contents');
+      }
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        return data.map((item: any) => ({
+          name: item.name,
+          type: item.type,
+          path: item.path,
+          download_url: item.download_url,
+          url: item.url,
+        }));
+      }
+      return [];
+    },
+    [beurl, getToken]
+  );
 
-  const fetchRepoInfo = async (owner: string, repo: string) => {
-    const token = await getToken();
-    const response = await fetch(`${beurl}/api/github/repo/${owner}/${repo}`, {
-      headers: { Authorization: `Bearer ${token}` },
+  const fetchRepoInfo = useCallback(
+    async (owner: string, repo: string) => {
+      const token = await getToken();
+      const response = await fetch(`${beurl}/api/github/repo/${owner}/${repo}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || errorData.message || 'Failed to fetch repository information');
+      }
+      return response.json();
+    },
+    [beurl, getToken]
+  );
+
+  // Sync lightweight repo pointer across participants and lazily load contents
+  useEffect(() => {
+    const imported = call?.state.custom?.importedRepo;
+    if (!imported) return;
+
+    const targetFullName = imported.fullName || imported.info?.full_name;
+    const targetDesc = imported.description || imported.info?.description || '';
+    const targetBranch = imported.defaultBranch || imported.info?.default_branch || 'main';
+    const targetOwner = imported.owner || (targetFullName ? targetFullName.split('/')[0] : '');
+    const targetRepo = imported.repo || (targetFullName ? targetFullName.split('/')[1] : '');
+
+    if (!targetFullName) return;
+
+    setRepoInfo((prev: any) => {
+      if (prev?.full_name === targetFullName) return prev;
+      return {
+        full_name: targetFullName,
+        description: targetDesc,
+        default_branch: targetBranch,
+      };
     });
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || errorData.details || errorData.message || 'Failed to fetch repository information');
+
+    if (imported.fileTree && Array.isArray(imported.fileTree) && imported.fileTree.length > 0) {
+      setFileTree(imported.fileTree);
+    } else if (targetOwner && targetRepo && (!repoInfo || repoInfo.full_name !== targetFullName)) {
+      setIsLoading(true);
+      fetchRepoContents(targetOwner, targetRepo)
+        .then((contents) => {
+          setFileTree(contents);
+        })
+        .catch((err) => {
+          console.error('Failed to lazily load repo contents:', err);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
-    return response.json();
-  };
+  }, [call?.state.custom?.importedRepo, fetchRepoContents, repoInfo]);
 
   const handleImportRepo = async () => {
     if (!repoUrl.trim()) return;
@@ -271,10 +308,20 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       ]);
       setRepoInfo(info);
       setFileTree(contents);
+
+      // Store lightweight pointer in call custom data to prevent quota overflow
       await call?.update({
         custom: {
           ...call?.state.custom,
-          importedRepo: { info, fileTree: contents, importedBy: userId, importedAt: new Date().toISOString() },
+          importedRepo: {
+            owner: parsed.owner,
+            repo: parsed.repo,
+            fullName: info.full_name,
+            description: info.description || '',
+            defaultBranch: info.default_branch || 'main',
+            importedBy: userId,
+            importedAt: new Date().toISOString(),
+          },
         },
       });
       toast({ title: 'Repository imported successfully', description: `${info.full_name} is now available to all participants` });

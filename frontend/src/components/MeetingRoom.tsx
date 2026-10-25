@@ -29,6 +29,9 @@ import {
   Copy,
   Info,
   LayoutList,
+  PhoneOff,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -50,6 +53,74 @@ import { ClassroomProvider, useClassroom } from "@/contexts/ClassroomContext";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
 
+interface ClassroomEndedModalProps {
+  onLeave: () => void;
+  endedByName?: string;
+}
+
+const ClassroomEndedModal = ({ onLeave, endedByName }: ClassroomEndedModalProps) => {
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onLeave();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [onLeave]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020813]/90 backdrop-blur-md p-4">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[rgba(0,180,255,0.25)] bg-[#040e1c]/95 p-6 sm:p-8 text-center shadow-[0_0_50px_rgba(0,180,255,0.2)]">
+        {/* Glow accent */}
+        <div
+          className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0,200,255,0.3) 0%, transparent 70%)",
+          }}
+        />
+
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 shadow-[0_0_20px_rgba(0,180,255,0.2)]">
+          <PhoneOff className="h-8 w-8" />
+        </div>
+
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+          Classroom Session Concluded
+        </h2>
+        <p className="text-sm text-neutral-300 mb-6 leading-relaxed">
+          {endedByName
+            ? `${endedByName} has ended this session for all participants.`
+            : "The host has ended this classroom session for everyone."}
+        </p>
+
+        <div className="mb-6 flex items-center justify-center gap-2 text-xs text-neutral-400 bg-white/[0.04] py-2.5 px-4 rounded-xl border border-white/10">
+          <Clock className="h-4 w-4 text-cyan-400 animate-spin" />
+          <span>
+            Redirecting to dashboard in{" "}
+            <strong className="text-cyan-300 text-sm">{countdown}s</strong>
+          </span>
+        </div>
+
+        <button
+          onClick={onLeave}
+          className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold text-sm transition-all shadow-[0_0_20px_rgba(0,180,255,0.3)] hover:shadow-[0_0_28px_rgba(0,180,255,0.5)] active:scale-[0.98]"
+        >
+          <span>Return to Dashboard Now</span>
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const MeetingRoomContent = () => {
   const [searchParams] = useSearchParams();
   const isPersonalRoom = !!searchParams.get("personal");
@@ -61,8 +132,12 @@ const MeetingRoomContent = () => {
   const [activeDockTab, setActiveDockTab] = useState<SideDockTab>("chat");
   const [showWhiteboard, setShowWhiteboard] = useState(false);
 
-  const { useCallCallingState, useParticipants, useLocalParticipant } =
-    useCallStateHooks();
+  const {
+    useCallCallingState,
+    useCallEndedAt,
+    useParticipants,
+    useLocalParticipant,
+  } = useCallStateHooks();
   const participants = useParticipants();
   const localParticipant = useLocalParticipant();
   const { messages } = useChat();
@@ -73,6 +148,30 @@ const MeetingRoomContent = () => {
   const { user } = useUser();
 
   const callingState = useCallCallingState();
+  const callEndedAt = useCallEndedAt();
+
+  const [isEndedByHost, setIsEndedByHost] = useState(false);
+  const [endedByName, setEndedByName] = useState<string | undefined>();
+
+  // Listen for host end-call broadcast
+  useEffect(() => {
+    if (!call) return;
+
+    const handleCustomEvent = (event: any) => {
+      const data = event?.custom || event;
+      if (data?.type === "meeting-ended-by-host") {
+        setIsEndedByHost(true);
+        if (data?.endedBy) {
+          setEndedByName(data.endedBy);
+        }
+      }
+    };
+
+    call.on("custom", handleCustomEvent);
+    return () => {
+      call.off("custom", handleCustomEvent);
+    };
+  }, [call]);
 
   // Track attendance when user joins or leaves meeting
   useEffect(() => {
@@ -157,6 +256,20 @@ const MeetingRoomContent = () => {
       call.off("participantLeft", handleParticipantLeft);
     };
   }, [call]);
+
+  const isCallEnded =
+    Boolean(callEndedAt) ||
+    Boolean(call?.state.endedAt) ||
+    isEndedByHost;
+
+  if (isCallEnded) {
+    return (
+      <ClassroomEndedModal
+        onLeave={() => navigate("/")}
+        endedByName={endedByName}
+      />
+    );
+  }
 
   if (callingState !== CallingState.JOINED) return <Loader />;
 

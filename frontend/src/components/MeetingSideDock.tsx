@@ -1,6 +1,7 @@
 import React from "react";
-import { MessageSquare, Users, Bot, Github, X } from "lucide-react";
+import { MessageSquare, Users, Bot, Github, X, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCallStateHooks } from "@stream-io/video-react-sdk";
 
 export type SideDockTab = "chat" | "participants" | "ai" | "github";
 
@@ -23,6 +24,15 @@ const MeetingSideDock = ({
   unreadCount,
   children,
 }: MeetingSideDockProps) => {
+  const { useDominantSpeaker, useParticipants } = useCallStateHooks();
+  const dominantSpeaker = useDominantSpeaker();
+  const participants = useParticipants();
+
+  // Find active speaker if any
+  const speakingParticipant =
+    (dominantSpeaker?.isSpeaking ? dominantSpeaker : null) ||
+    participants.find((p) => p.isSpeaking);
+
   const tabs: { id: SideDockTab; label: string; icon: React.ReactNode; badge?: number }[] = [
     {
       id: "chat",
@@ -67,9 +77,9 @@ const MeetingSideDock = ({
       />
 
       {/* Dock Header with Tabs */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[rgba(0,180,255,0.14)] bg-[#020b16]/70">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[rgba(0,180,255,0.14)] bg-[#020b16]/70 gap-2">
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 shrink-0">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -102,14 +112,30 @@ const MeetingSideDock = ({
           })}
         </div>
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-colors ml-2 flex-shrink-0"
-          title="Close panel"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {/* Right Header Section: Active Speaker Indicator + Close */}
+        <div className="flex items-center gap-2 min-w-0 shrink">
+          {speakingParticipant && (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 text-xs shadow-[0_0_12px_rgba(0,180,255,0.25)] animate-pulse"
+              title={`${speakingParticipant.name || "Participant"} is currently speaking`}
+            >
+              <Volume2 className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+              <span className="truncate max-w-[80px] sm:max-w-[110px] text-[11px] font-semibold text-cyan-200">
+                {speakingParticipant.name || "Speaking..."}
+              </span>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            </div>
+          )}
+
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+            title="Close panel"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Dock Body / Active Tab Content */}
