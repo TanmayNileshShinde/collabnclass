@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  ToggleAudioPublishingButton,
-  ToggleVideoPublishingButton,
   ScreenShareButton,
   ReactionsButton,
   RecordCallButton,
@@ -39,6 +37,12 @@ import {
   ArrowRight,
   Radio,
   ShieldCheck,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  ChevronUp,
+  Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -224,7 +228,23 @@ const MeetingRoomContent = () => {
     useCallEndedAt,
     useParticipants,
     useLocalParticipant,
+    useCameraState,
+    useMicrophoneState,
   } = useCallStateHooks();
+
+  const {
+    camera,
+    isMute: isCameraMuted,
+    devices: cameraDevices,
+    selectedDevice: selectedCamera,
+  } = useCameraState();
+
+  const {
+    microphone,
+    isMute: isMicMuted,
+    devices: micDevices,
+    selectedDevice: selectedMicrophone,
+  } = useMicrophoneState();
   const participants = useParticipants();
   const localParticipant = useLocalParticipant();
   const { messages } = useChat();
@@ -470,7 +490,7 @@ const MeetingRoomContent = () => {
 
       {/* Scoped Stream CSS Overrides to hide duplicate labels and style tiles & controls */}
       <style>{`
-        /* Suppress Stream's default label so 'de' or text duplicates never show */
+        /* Suppress Stream's default label so text duplicates never show */
         .str-video__participant-details {
           display: none !important;
         }
@@ -514,17 +534,20 @@ const MeetingRoomContent = () => {
           height: auto !important;
           margin: auto !important;
         }
-        /* Stream composite & circle buttons styling for dock */
-        .str-video__composite-button,
+        /* Stream circle icon buttons (ScreenShare, Reactions, Record) */
         .str-video__circle-button,
         .str-video__call-controls__button {
           background: #0e1e33 !important;
           border: 1px solid rgba(255, 255, 255, 0.1) !important;
           border-radius: 0.75rem !important;
           color: #e0f2fe !important;
+          width: 36px !important;
+          height: 36px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
           transition: all 0.2s ease !important;
         }
-        .str-video__composite-button:hover,
         .str-video__circle-button:hover,
         .str-video__call-controls__button:hover {
           background: #152c4a !important;
@@ -538,6 +561,11 @@ const MeetingRoomContent = () => {
           border: 1px solid rgba(244, 63, 94, 0.45) !important;
           color: #fb7185 !important;
           border-radius: 0.75rem !important;
+          width: 36px !important;
+          height: 36px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
         .str-video__cancel-call-button:hover,
         button[data-testid="cancel-call-button"]:hover {
@@ -736,10 +764,151 @@ const MeetingRoomContent = () => {
       <div className="fixed bottom-3 inset-x-0 z-40 flex items-center justify-center px-2 pointer-events-none">
         <div className="flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-auto px-3.5 py-2 rounded-2xl bg-[#040e1c]/95 backdrop-blur-2xl border border-[rgba(0,180,255,0.28)] shadow-[0_10px_40px_rgba(0,0,0,0.75)] max-w-[98vw] overflow-x-auto no-scrollbar">
 
-          {/* 1. Core Media Controls (Mic, Cam) */}
-          <div className="flex items-center gap-1 shrink-0">
-            <ToggleAudioPublishingButton />
-            <ToggleVideoPublishingButton />
+          {/* 1. Core Media Controls (Sleek Mic & Cam with Dropdown Device Selector) */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Microphone Toggle & Device Selector */}
+            <div
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200 border shadow-sm",
+                isMicMuted
+                  ? "bg-rose-500/20 border-rose-500/50 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.25)]"
+                  : "bg-[#0e1e33] border-white/10 hover:border-cyan-400/40 text-neutral-200 hover:text-cyan-300"
+              )}
+            >
+              <button
+                onClick={() => microphone.toggle()}
+                className="cursor-pointer rounded-l-xl p-2 sm:px-2.5 sm:py-1.5 transition-colors flex items-center gap-1.5 active:scale-95"
+                title={isMicMuted ? "Unmute Microphone" : "Mute Microphone"}
+              >
+                {isMicMuted ? (
+                  <MicOff size={16} className="text-rose-400" />
+                ) : (
+                  <Mic size={16} className="text-cyan-400" />
+                )}
+                <span className="hidden xl:inline text-xs font-medium">
+                  {isMicMuted ? "Mic Off" : "Mic On"}
+                </span>
+              </button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="cursor-pointer rounded-r-xl py-2 px-1 sm:py-1.5 sm:px-1.5 text-neutral-400 hover:text-white hover:bg-white/10 border-l border-white/10 transition-colors"
+                    title="Select Microphone Input"
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="top"
+                  align="start"
+                  className="border-[rgba(0,180,255,0.25)] bg-[#040e1c]/95 backdrop-blur-2xl text-white rounded-xl min-w-[210px] p-1.5 shadow-2xl z-50"
+                >
+                  <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 px-2 py-1 flex items-center gap-1.5">
+                    <Mic size={11} />
+                    Microphone Input
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="border-white/10" />
+                  {micDevices && micDevices.length > 0 ? (
+                    micDevices.map((d) => (
+                      <DropdownMenuItem
+                        key={d.deviceId}
+                        onClick={() => microphone.select(d.deviceId)}
+                        className={cn(
+                          "cursor-pointer text-xs py-1.5 px-2 rounded-lg flex items-center justify-between transition-colors",
+                          selectedMicrophone === d.deviceId
+                            ? "bg-cyan-500/20 text-cyan-300 font-semibold"
+                            : "hover:bg-white/5 text-neutral-300 hover:text-white"
+                        )}
+                      >
+                        <span className="truncate max-w-[170px]">
+                          {d.label || `Microphone ${d.deviceId.slice(0, 5)}...`}
+                        </span>
+                        {selectedMicrophone === d.deviceId && (
+                          <Check size={12} className="text-cyan-400 ml-1.5 shrink-0" />
+                        )}
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-xs text-neutral-400">
+                      Default System Microphone
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Camera Toggle & Device Selector */}
+            <div
+              className={cn(
+                "flex items-center rounded-xl transition-all duration-200 border shadow-sm",
+                isCameraMuted
+                  ? "bg-rose-500/20 border-rose-500/50 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.25)]"
+                  : "bg-[#0e1e33] border-white/10 hover:border-cyan-400/40 text-neutral-200 hover:text-cyan-300"
+              )}
+            >
+              <button
+                onClick={() => camera.toggle()}
+                className="cursor-pointer rounded-l-xl p-2 sm:px-2.5 sm:py-1.5 transition-colors flex items-center gap-1.5 active:scale-95"
+                title={isCameraMuted ? "Turn On Camera" : "Turn Off Camera"}
+              >
+                {isCameraMuted ? (
+                  <VideoOff size={16} className="text-rose-400" />
+                ) : (
+                  <Video size={16} className="text-cyan-400" />
+                )}
+                <span className="hidden xl:inline text-xs font-medium">
+                  {isCameraMuted ? "Cam Off" : "Cam On"}
+                </span>
+              </button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="cursor-pointer rounded-r-xl py-2 px-1 sm:py-1.5 sm:px-1.5 text-neutral-400 hover:text-white hover:bg-white/10 border-l border-white/10 transition-colors"
+                    title="Select Camera Input"
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="top"
+                  align="start"
+                  className="border-[rgba(0,180,255,0.25)] bg-[#040e1c]/95 backdrop-blur-2xl text-white rounded-xl min-w-[210px] p-1.5 shadow-2xl z-50"
+                >
+                  <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 px-2 py-1 flex items-center gap-1.5">
+                    <Video size={11} />
+                    Camera Device
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="border-white/10" />
+                  {cameraDevices && cameraDevices.length > 0 ? (
+                    cameraDevices.map((d) => (
+                      <DropdownMenuItem
+                        key={d.deviceId}
+                        onClick={() => camera.select(d.deviceId)}
+                        className={cn(
+                          "cursor-pointer text-xs py-1.5 px-2 rounded-lg flex items-center justify-between transition-colors",
+                          selectedCamera === d.deviceId
+                            ? "bg-cyan-500/20 text-cyan-300 font-semibold"
+                            : "hover:bg-white/5 text-neutral-300 hover:text-white"
+                        )}
+                      >
+                        <span className="truncate max-w-[170px]">
+                          {d.label || `Camera ${d.deviceId.slice(0, 5)}...`}
+                        </span>
+                        {selectedCamera === d.deviceId && (
+                          <Check size={12} className="text-cyan-400 ml-1.5 shrink-0" />
+                        )}
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1.5 text-xs text-neutral-400">
+                      Default System Camera
+                    </div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Divider */}
