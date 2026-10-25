@@ -240,6 +240,27 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     try {
       setIsJoining(true);
       await call.join();
+      if (!isMicCamToggled) {
+        window.sessionStorage.removeItem("join_muted");
+        try {
+          await Promise.allSettled([
+            call.camera.enable(),
+            call.microphone.enable(),
+          ]);
+        } catch (mediaErr) {
+          console.warn("Failed to enable media on join:", mediaErr);
+        }
+      } else {
+        window.sessionStorage.setItem("join_muted", "true");
+        try {
+          await Promise.allSettled([
+            call.camera.disable(),
+            call.microphone.disable(),
+          ]);
+        } catch (mediaErr) {
+          console.warn("Failed to mute media on join:", mediaErr);
+        }
+      }
       setIsSetupComplete(true);
     } catch (error) {
       console.error("Failed to join call:", error);

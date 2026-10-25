@@ -152,26 +152,15 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
           )}
         </div>
 
-        {/* Dynamic Equalizer Waves when speaking, or Hand Raised label */}
-        {isSpeaking ? (
-          <div className="flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/40 shadow-[0_0_12px_rgba(0,220,255,0.3)]">
-            <div className="flex items-end gap-0.5 h-3 w-5">
-              <span className="w-1 bg-cyan-400 rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-1.5" />
-              <span className="w-1 bg-cyan-300 rounded-full animate-[pulse_0.4s_ease-in-out_infinite] h-3" />
-              <span className="w-1 bg-cyan-400 rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-2" />
-            </div>
-            <span className="text-[11px] font-semibold text-cyan-300 tracking-wide">
-              Speaking
-            </span>
-          </div>
-        ) : isHandRaised ? (
+        {/* Hand Raised badge on avatar placeholder */}
+        {isHandRaised && (
           <div className="flex items-center gap-1 mt-3 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
             <span className="text-xs">✋</span>
             <span className="text-[11px] font-bold text-amber-300 tracking-wide">
               Hand Raised
             </span>
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
