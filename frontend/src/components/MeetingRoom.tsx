@@ -32,6 +32,8 @@ import {
   PhoneOff,
   Clock,
   ArrowRight,
+  Radio,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -52,6 +54,85 @@ import { useChat } from "@/contexts/ChatContext";
 import { ClassroomProvider, useClassroom } from "@/contexts/ClassroomContext";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
+
+// Animated SVG wave layer with dual-theme smooth crossfade
+const OceanWaves = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <svg
+      className="absolute bottom-0 left-0 w-full opacity-40 dark:opacity-60"
+      viewBox="0 0 1440 120"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ height: "70px" }}
+    >
+      <path
+        d="M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"
+        fill="rgba(0, 100, 180, 0.08)"
+        style={{ animation: "waveMove 8s ease-in-out infinite" }}
+      />
+      <path
+        d="M0,80 C200,40 400,100 600,70 C800,40 1000,90 1200,65 C1320,50 1400,80 1440,75 L1440,120 L0,120 Z"
+        fill="rgba(0, 150, 220, 0.05)"
+        style={{ animation: "waveMove 12s ease-in-out infinite reverse" }}
+      />
+    </svg>
+
+    <style>{`
+      @keyframes waveMove {
+        0%, 100% { d: path("M0,60 C180,100 360,20 540,60 C720,100 900,20 1080,60 C1260,100 1380,40 1440,60 L1440,120 L0,120 Z"); }
+        50% { d: path("M0,40 C180,70 360,10 540,50 C720,90 900,10 1080,50 C1260,90 1380,30 1440,45 L1440,120 L0,120 Z"); }
+      }
+      @keyframes floatBubble {
+        0% { transform: translateY(0) scale(1); opacity: 0.6; }
+        50% { transform: translateY(-25px) scale(1.1); opacity: 0.9; }
+        100% { transform: translateY(-50px) scale(0.8); opacity: 0; }
+      }
+    `}</style>
+  </div>
+);
+
+// Floating particle bubbles
+const Bubbles = () => {
+  const bubbles = [
+    { size: 3, left: "8%", delay: "0s", duration: "7s", bottom: "10%" },
+    { size: 2, left: "28%", delay: "1.5s", duration: "9s", bottom: "5%" },
+    { size: 4, left: "68%", delay: "3s", duration: "8s", bottom: "12%" },
+    { size: 2, left: "88%", delay: "0.8s", duration: "10s", bottom: "8%" },
+  ];
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+      {bubbles.map((b, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: b.size,
+            height: b.size,
+            left: b.left,
+            bottom: b.bottom,
+            background: `radial-gradient(circle at 30% 30%, rgba(150,220,255,0.9), rgba(0,150,220,0.3))`,
+            border: "1px solid rgba(0,200,255,0.4)",
+            boxShadow: "0 0 6px rgba(0,200,255,0.4)",
+            animation: `floatBubble ${b.duration} ${b.delay} ease-in infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// Scanlines overlay for cyber depth
+const Scanlines = () => (
+  <div
+    className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.025]"
+    style={{
+      backgroundImage:
+        "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,200,255,1) 2px, rgba(0,200,255,1) 3px)",
+      backgroundSize: "100% 3px",
+    }}
+  />
+);
 
 interface ClassroomEndedModalProps {
   onLeave: () => void;
@@ -79,7 +160,6 @@ const ClassroomEndedModal = ({ onLeave, endedByName }: ClassroomEndedModalProps)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020813]/90 backdrop-blur-md p-4">
       <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[rgba(0,180,255,0.25)] bg-[#040e1c]/95 p-6 sm:p-8 text-center shadow-[0_0_50px_rgba(0,180,255,0.2)]">
-        {/* Glow accent */}
         <div
           className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full pointer-events-none"
           style={{
@@ -92,7 +172,7 @@ const ClassroomEndedModal = ({ onLeave, endedByName }: ClassroomEndedModalProps)
           <PhoneOff className="h-8 w-8" />
         </div>
 
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 font-syne">
           Classroom Session Concluded
         </h2>
         <p className="text-sm text-neutral-300 mb-6 leading-relaxed">
@@ -125,7 +205,9 @@ const MeetingRoomContent = () => {
   const [searchParams] = useSearchParams();
   const isPersonalRoom = !!searchParams.get("personal");
   const navigate = useNavigate();
-  const [layout, setLayout] = useState<CallLayoutType>("speaker-left");
+
+  // Default to grid layout so single and multi-participant rooms are centered and spacious
+  const [layout, setLayout] = useState<CallLayoutType>("grid");
 
   // Unified Side Dock state
   const [isDockOpen, setIsDockOpen] = useState(false);
@@ -152,6 +234,19 @@ const MeetingRoomContent = () => {
 
   const [isEndedByHost, setIsEndedByHost] = useState(false);
   const [endedByName, setEndedByName] = useState<string | undefined>();
+
+  // Live ticking clock
+  const [time, setTime] = useState(
+    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+  );
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(
+        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      );
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Listen for host end-call broadcast
   useEffect(() => {
@@ -181,7 +276,6 @@ const MeetingRoomContent = () => {
     const userId = user.id;
     const userName = user.fullName || user.username || "Unknown User";
 
-    // Record join when user successfully joins
     if (callingState === CallingState.JOINED && meetingId && userId) {
       AttendanceService.recordJoin(meetingId, userId, userName).catch(
         (error) => {
@@ -190,11 +284,9 @@ const MeetingRoomContent = () => {
       );
     }
 
-    // Set up leave tracking when component unmounts or user leaves
     const handleLeave = (isUnload = false) => {
       if (meetingId && userId) {
         if (isUnload) {
-          // Use keepalive / beacon on page unload to ensure request is never aborted
           AttendanceService.recordLeaveBeacon(meetingId, userId);
         } else {
           AttendanceService.recordLeave(meetingId, userId).catch((error) => {
@@ -204,7 +296,6 @@ const MeetingRoomContent = () => {
       }
     };
 
-    // Listen for page unload (user closes browser/navigates away)
     const handleBeforeUnload = () => {
       handleLeave(true);
     };
@@ -212,7 +303,6 @@ const MeetingRoomContent = () => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pagehide", handleBeforeUnload);
 
-    // Cleanup on unmount
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handleBeforeUnload);
@@ -220,7 +310,7 @@ const MeetingRoomContent = () => {
     };
   }, [call, user, callingState]);
 
-  // Track participant join/leave events for other users
+  // Track participant join/leave events
   useEffect(() => {
     if (!call) return;
 
@@ -273,8 +363,8 @@ const MeetingRoomContent = () => {
 
   if (callingState !== CallingState.JOINED) return <Loader />;
 
-  const meetingCode = call?.state.custom?.meetingCode;
-  const meetingHeading = call?.state.custom?.heading || "Meeting";
+  const meetingCode = call?.state.custom?.meetingCode || call?.id;
+  const meetingHeading = call?.state.custom?.heading || "Instant Meeting";
   const meetingSubheading = call?.state.custom?.subheading;
   const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
   const meetingLink = call ? `${baseUrl}/meeting/${call.id}` : "";
@@ -295,14 +385,14 @@ const MeetingRoomContent = () => {
   const copyMeetingCode = () => {
     if (meetingCode) {
       navigator.clipboard.writeText(meetingCode);
-      toast({ title: "Meeting Code Copied" });
+      toast({ title: "Meeting Code Copied", description: meetingCode });
     }
   };
 
   const copyMeetingLink = () => {
     if (meetingLink) {
       navigator.clipboard.writeText(meetingLink);
-      toast({ title: "Meeting Link Copied" });
+      toast({ title: "Meeting Link Copied", description: "URL ready to share." });
     }
   };
 
@@ -337,115 +427,229 @@ const MeetingRoomContent = () => {
   };
 
   return (
-    <section className="relative h-screen w-full overflow-hidden pt-4 text-white bg-[#020813]">
-      {/* Meeting Header */}
-      <div className="fixed top-4 left-4 right-20 z-30 pointer-events-none">
-        <div className="glassmorphism-card px-4 py-3 rounded-2xl max-w-md pointer-events-auto border border-white/10 bg-[#040e1c]/80 backdrop-blur-xl shadow-lg">
-          <h1 className="text-lg font-bold text-white mb-0.5 truncate">
-            {meetingHeading}
-          </h1>
-          {meetingSubheading && (
-            <p className="text-xs text-white/70 truncate">{meetingSubheading}</p>
+    <section className="relative h-screen w-full overflow-hidden text-white bg-[#020813] select-none flex flex-col justify-between">
+      {/* Background Atmosphere */}
+      <OceanWaves />
+      <Bubbles />
+      <Scanlines />
+
+      {/* Ambient Radial Glowing Orbs */}
+      <div
+        className="absolute -top-32 -right-32 w-80 h-80 rounded-full pointer-events-none blur-3xl opacity-25"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(0, 180, 255, 0.4) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full pointer-events-none blur-3xl opacity-20"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(2, 132, 199, 0.35) 0%, transparent 70%)",
+        }}
+      />
+
+      {/* Scoped Stream CSS Overrides to hide duplicate labels and style tiles & controls */}
+      <style>{`
+        /* Suppress Stream's default label so 'de' or text duplicates never show */
+        .str-video__participant-details {
+          display: none !important;
+        }
+        /* Style Stream's video tile container with Cyberpunk border */
+        .str-video__participant-view {
+          border-radius: 1rem !important;
+          border: 1px solid rgba(0, 180, 255, 0.2) !important;
+          overflow: hidden !important;
+          background: #030a16 !important;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
+        }
+        /* Stream's call controls buttons integration */
+        .str-video__call-controls {
+          gap: 0.35rem !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+        .str-video__call-controls .str-video__composite-button,
+        .str-video__call-controls .str-video__circle-button,
+        .str-video__call-controls .str-video__call-controls__button {
+          background: #0e1e33 !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 0.75rem !important;
+          color: #e0f2fe !important;
+          transition: all 0.2s ease !important;
+        }
+        .str-video__call-controls .str-video__composite-button:hover,
+        .str-video__call-controls .str-video__circle-button:hover,
+        .str-video__call-controls .str-video__call-controls__button:hover {
+          background: #152c4a !important;
+          border-color: rgba(0, 180, 255, 0.45) !important;
+          color: #38bdf8 !important;
+          box-shadow: 0 0 12px rgba(0, 180, 255, 0.25) !important;
+        }
+        .str-video__call-controls .str-video__cancel-call-button,
+        .str-video__call-controls button[data-testid="cancel-call-button"] {
+          background: rgba(225, 29, 72, 0.2) !important;
+          border: 1px solid rgba(244, 63, 94, 0.45) !important;
+          color: #fb7185 !important;
+        }
+        .str-video__call-controls .str-video__cancel-call-button:hover,
+        .str-video__call-controls button[data-testid="cancel-call-button"]:hover {
+          background: rgba(225, 29, 72, 0.4) !important;
+          border-color: rgba(244, 63, 94, 0.75) !important;
+          box-shadow: 0 0 16px rgba(244, 63, 94, 0.45) !important;
+        }
+      `}</style>
+
+      {/* ========================================================
+          FLAGSHIP CYBER TOP COCKPIT BAR
+      ======================================================== */}
+      <header className="fixed top-2.5 inset-x-2.5 sm:inset-x-4 z-30 flex items-center justify-between gap-3 pointer-events-none">
+        {/* Left: Meeting Branding & Title Pill */}
+        <div className="pointer-events-auto flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-[#040e1c]/90 backdrop-blur-xl border border-[rgba(0,180,255,0.22)] shadow-lg max-w-sm sm:max-w-md">
+          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-mono uppercase tracking-wider font-bold text-cyan-400">
+                LIVE STAGE
+              </span>
+              {meetingCode && (
+                <button
+                  onClick={copyMeetingCode}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-neutral-400 hover:text-cyan-300 hover:bg-white/5 transition-colors"
+                  title="Copy meeting code"
+                >
+                  <span>{formatMeetingCode(meetingCode)}</span>
+                  <Copy size={10} />
+                </button>
+              )}
+            </div>
+            <h1 className="text-xs sm:text-sm font-bold text-white truncate font-syne">
+              {meetingHeading}
+            </h1>
+          </div>
+        </div>
+
+        {/* Center: Live Broadcast Telemetry (Hidden on small mobile) */}
+        <div className="hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-[#040e1c]/85 backdrop-blur-xl border border-[rgba(0,180,255,0.2)] shadow-lg">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300">
+            <Clock size={12} className="text-cyan-400 animate-pulse" />
+            <span>{time}</span>
+          </div>
+          <span className="w-px h-3.5 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300">
+            <Radio size={12} className="text-cyan-400" />
+            <span>SFU Mesh</span>
+          </div>
+          <span className="w-px h-3.5 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+            <ShieldCheck size={13} />
+            <span>Encrypted</span>
+          </div>
+        </div>
+
+        {/* Right: Quick Tools (People Count & Info Dropdown) */}
+        <div className="pointer-events-auto flex items-center gap-2">
+          {/* People Count Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-[#040e1c]/85 backdrop-blur-xl border border-white/10 text-xs text-neutral-300 shadow-lg">
+            <Users size={13} className="text-cyan-400" />
+            <span className="font-bold text-white">{totalParticipantsCount}</span>
+            <span className="text-neutral-400 text-[11px]">in stage</span>
+          </div>
+
+          {/* Meeting Info Dropdown Button */}
+          {meetingCode && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="cursor-pointer rounded-2xl bg-[#040e1c]/85 backdrop-blur-xl border border-white/10 p-2 hover:bg-[#091b33] text-neutral-300 hover:text-white transition-colors shadow-lg"
+                  title="Classroom Information"
+                >
+                  <Info size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                side="bottom"
+                className="border-[rgba(0,180,255,0.25)] bg-[#040e1c]/95 backdrop-blur-2xl text-white min-w-[290px] p-4 shadow-2xl rounded-2xl"
+              >
+                <DropdownMenuLabel className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">
+                  Classroom Information
+                </DropdownMenuLabel>
+
+                <div className="mb-3 p-3 bg-white/[0.04] rounded-xl border border-white/5">
+                  <h3 className="font-bold text-white text-sm font-syne mb-0.5">
+                    {meetingHeading}
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    {meetingSubheading || "Interactive Collaborative Classroom"}
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  {/* Meeting Code */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase text-neutral-400 mb-1 block">
+                      Stage ID Code
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 px-3 py-1.5 bg-black/40 border border-white/10 rounded-xl">
+                        <p className="text-sm font-mono font-bold tracking-wider text-center text-cyan-300 uppercase">
+                          {formatMeetingCode(meetingCode)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={copyMeetingCode}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-neutral-300 hover:text-cyan-300 border border-white/10 transition-colors"
+                        title="Copy Code"
+                      >
+                        <Copy size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Meeting URL */}
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase text-neutral-400 mb-1 block">
+                      Direct Invite Link
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 px-3 py-1.5 bg-black/40 border border-white/10 rounded-xl">
+                        <p className="text-xs text-neutral-300 truncate font-mono">
+                          {meetingLink}
+                        </p>
+                      </div>
+                      <button
+                        onClick={copyMeetingLink}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-neutral-300 hover:text-cyan-300 border border-white/10 transition-colors"
+                        title="Copy Link"
+                      >
+                        <Copy size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Meeting Info Button - Top Right */}
-      {meetingCode && (
-        <div className="fixed top-4 right-4 z-30">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="cursor-pointer rounded-2xl bg-[#040e1c]/80 backdrop-blur-xl border border-white/10 px-3.5 py-2 hover:bg-[#091b33] transition-colors shadow-lg">
-                <Info size={18} className="text-white" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              side="bottom"
-              className="border-[rgba(0,180,255,0.2)] bg-[#040e1c] text-white min-w-[280px] p-4 shadow-2xl"
-            >
-              <DropdownMenuLabel className="text-sm font-semibold mb-3">
-                Meeting Information
-              </DropdownMenuLabel>
-
-              {/* Meeting Heading and Subheading */}
-              <div className="mb-4 p-3 bg-white/[0.04] rounded-xl border border-white/5">
-                <h3 className="font-semibold text-white text-sm mb-1">
-                  {meetingHeading}
-                </h3>
-                {meetingSubheading && (
-                  <p className="text-xs text-white/70">
-                    {meetingSubheading}
-                  </p>
-                )}
-              </div>
-
-              {meetingCode && (
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-400 mb-1 block">
-                    Meeting Code
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl">
-                      <p className="text-base font-bold tracking-widest text-center text-cyan-300 uppercase">
-                        {formatMeetingCode(meetingCode)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={copyMeetingCode}
-                      className="p-2 rounded-xl hover:bg-white/10 transition-colors"
-                      title="Copy Meeting Code"
-                    >
-                      <Copy size={16} className="text-neutral-300 hover:text-white" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {meetingLink && (
-                <div>
-                  <label className="text-xs font-medium text-neutral-400 mb-1 block">
-                    Meeting Link
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/10 rounded-xl">
-                      <p className="text-xs text-neutral-300 truncate">
-                        {meetingLink}
-                      </p>
-                    </div>
-                    <button
-                      onClick={copyMeetingLink}
-                      className="p-2 rounded-xl hover:bg-white/10 transition-colors"
-                      title="Copy Meeting Link"
-                    >
-                      <Copy size={16} className="text-neutral-300 hover:text-white" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
-
-      {/* Main Video Stage with responsive padding when dock is open */}
+      {/* ========================================================
+          MAIN VIDEO STAGE (Centered & Responsive)
+      ======================================================== */}
       <div
         className={cn(
-          "relative flex size-full items-center justify-center transition-all duration-300 ease-in-out",
+          "relative flex flex-1 size-full items-center justify-center pt-14 pb-20 px-2 sm:px-4 transition-all duration-300 ease-in-out",
           isDockOpen && "xl:pr-[420px]"
         )}
       >
         <div
           className={cn(
             "flex size-full items-center justify-center transition-all duration-300",
-            isDockOpen ? "max-w-[calc(100%-420px)]" : "max-w-[1200px]"
+            isDockOpen ? "max-w-[calc(100%-420px)]" : "max-w-7xl"
           )}
-          style={{ minWidth: "320px" }}
         >
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ minWidth: "320px", width: "100%" }}
-          >
+          <div className="w-full h-full flex items-center justify-center">
             <CallLayout />
           </div>
         </div>
@@ -479,22 +683,33 @@ const MeetingRoomContent = () => {
         <Whiteboard onClose={() => setShowWhiteboard(false)} />
       )}
 
-      {/* Bottom Control Bar */}
-      <div className="fixed bottom-0 inset-x-0 z-40 pb-4 pt-2 flex items-center justify-center pointer-events-none">
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 pointer-events-auto px-4 py-2.5 rounded-2xl bg-[#040e1c]/90 backdrop-blur-xl border border-[rgba(0,180,255,0.18)] shadow-[0_8px_32px_rgba(0,0,0,0.65)]">
+      {/* ========================================================
+          UNIFIED BOTTOM COCKPIT DOCK (Single Sleek Bar, No 2nd Row!)
+      ======================================================== */}
+      <div className="fixed bottom-2.5 inset-x-0 z-40 flex items-center justify-center px-2 pointer-events-none">
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-auto px-3 py-1.5 rounded-2xl bg-[#040e1c]/90 backdrop-blur-2xl border border-[rgba(0,180,255,0.25)] shadow-[0_8px_32px_rgba(0,0,0,0.7)] max-w-[98vw] overflow-x-auto no-scrollbar">
+
+          {/* 1. Core Media Controls (Mic, Cam, Screen Share, Reactions, Record) */}
           <CallControls onLeave={() => navigate(`/`)} />
 
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 shrink-0 hidden sm:block" />
+
+          {/* 2. Classroom Tools (Layout, Stats, Whiteboard, Hand Raise) */}
           <DropdownMenu>
-            <div className="flex items-center">
-              <DropdownMenuTrigger className="cursor-pointer rounded-xl bg-[#102033] px-3.5 py-2 hover:bg-[#172c47] text-neutral-300 hover:text-white transition-colors border border-white/5">
-                <LayoutList size={18} />
-              </DropdownMenuTrigger>
-            </div>
-            <DropdownMenuContent className="border-[rgba(0,180,255,0.2)] bg-[#040e1c] text-white">
+            <DropdownMenuTrigger asChild>
+              <button
+                className="cursor-pointer rounded-xl bg-[#0e1e33] p-2 hover:bg-[#152c4a] text-neutral-300 hover:text-cyan-300 transition-colors border border-white/10 shrink-0 shadow-sm"
+                title="Switch Video Layout"
+              >
+                <LayoutList size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="border-[rgba(0,180,255,0.2)] bg-[#040e1c] text-white rounded-xl">
               {["Grid", "Speaker-Left", "Speaker-Right"].map((item, index) => (
                 <div key={index}>
                   <DropdownMenuItem
-                    className="cursor-pointer hover:bg-cyan-500/20 text-xs"
+                    className="cursor-pointer hover:bg-cyan-500/20 text-xs py-1.5"
                     onClick={() =>
                       setLayout(item.toLowerCase() as CallLayoutType)
                     }
@@ -513,25 +728,25 @@ const MeetingRoomContent = () => {
           <button
             onClick={() => setShowWhiteboard((prev) => !prev)}
             className={cn(
-              "cursor-pointer rounded-xl p-2.5 sm:px-3 sm:py-2 transition-all flex items-center gap-1.5 border",
+              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
               showWhiteboard
                 ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#102033] text-neutral-300 hover:text-white hover:bg-[#172c47] border-white/5"
+                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
             )}
-            title="Toggle Whiteboard"
+            title="Toggle Collaborative Whiteboard"
           >
-            <Edit size={18} />
-            <span className="hidden lg:inline text-xs font-medium">Whiteboard</span>
+            <Edit size={16} />
+            <span className="hidden xl:inline text-xs font-medium">Board</span>
           </button>
 
           {/* ✋ Raise Hand Button */}
           <button
             onClick={toggleHandRaise}
             className={cn(
-              "cursor-pointer rounded-xl p-2.5 sm:px-3 sm:py-2 transition-all flex items-center gap-1.5 border",
+              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
               isHandRaised
                 ? "bg-amber-500/25 border-amber-400 text-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.5)] animate-pulse"
-                : "bg-[#102033] text-neutral-300 hover:text-white hover:bg-[#172c47] border-white/5"
+                : "bg-[#0e1e33] text-neutral-300 hover:text-amber-300 hover:bg-[#152c4a] border-white/10"
             )}
             title={
               isHandRaised
@@ -539,27 +754,31 @@ const MeetingRoomContent = () => {
                 : "Raise your hand to ask a question"
             }
           >
-            <span className="text-base leading-none">✋</span>
-            <span className="hidden lg:inline text-xs font-medium">
-              {isHandRaised ? "Hand Raised" : "Raise Hand"}
+            <span className="text-sm leading-none">✋</span>
+            <span className="hidden xl:inline text-xs font-medium">
+              {isHandRaised ? "Raised" : "Hand"}
             </span>
           </button>
 
+          {/* Divider */}
+          <div className="w-px h-6 bg-white/10 shrink-0 hidden sm:block" />
+
+          {/* 3. Collaboration Side Drawers (Chat, People, AI Tutor, Code) */}
           {/* Chat Button */}
           <button
             onClick={() => handleToggleDock("chat")}
             className={cn(
-              "relative cursor-pointer rounded-xl p-2.5 sm:px-3 sm:py-2 transition-all flex items-center gap-1.5 border",
+              "relative cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
               isDockOpen && activeDockTab === "chat"
                 ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#102033] text-neutral-300 hover:text-white hover:bg-[#172c47] border-white/5"
+                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
             )}
-            title="Toggle Chat"
+            title="Toggle Live Chat"
           >
-            <MessageSquare size={18} />
-            <span className="hidden lg:inline text-xs font-medium">Chat</span>
+            <MessageSquare size={16} />
+            <span className="hidden xl:inline text-xs font-medium">Chat</span>
             {messages.length > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-400 text-[#020b16] px-1 text-[10px] font-bold">
+              <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-400 text-[#020b16] px-1 text-[9px] font-bold">
                 {messages.length}
               </span>
             )}
@@ -569,24 +788,24 @@ const MeetingRoomContent = () => {
           <button
             onClick={() => handleToggleDock("participants")}
             className={cn(
-              "relative cursor-pointer rounded-xl p-2.5 sm:px-3 sm:py-2 transition-all flex items-center gap-1.5 border",
+              "relative cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
               isDockOpen && activeDockTab === "participants"
                 ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#102033] text-neutral-300 hover:text-white hover:bg-[#172c47] border-white/5"
+                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
             )}
-            title="Toggle Participants"
+            title="View Stage Participants"
           >
-            <Users size={18} />
-            <span className="hidden lg:inline text-xs font-medium">People</span>
+            <Users size={16} />
+            <span className="hidden xl:inline text-xs font-medium">People</span>
             {raisedHands.size > 0 ? (
               <span
-                className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 text-black px-1.5 text-[10px] font-extrabold animate-pulse"
+                className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-400 text-black px-1 text-[9px] font-extrabold animate-pulse"
                 title={`${raisedHands.size} hand(s) raised`}
               >
                 ✋ {raisedHands.size}
               </span>
             ) : totalParticipantsCount > 0 ? (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-1 text-[10px] font-bold">
+              <span className="flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 px-1 text-[9px] font-bold">
                 {totalParticipantsCount}
               </span>
             ) : null}
@@ -596,33 +815,40 @@ const MeetingRoomContent = () => {
           <button
             onClick={() => handleToggleDock("ai")}
             className={cn(
-              "cursor-pointer rounded-xl p-2.5 sm:px-3 sm:py-2 transition-all flex items-center gap-1.5 border",
+              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
               isDockOpen && activeDockTab === "ai"
                 ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#102033] text-neutral-300 hover:text-white hover:bg-[#172c47] border-white/5"
+                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
             )}
-            title="AI Study Assistant"
+            title="AI Study Tutor"
           >
-            <Bot size={18} />
-            <span className="hidden lg:inline text-xs font-medium">AI Tutor</span>
+            <Bot size={16} />
+            <span className="hidden xl:inline text-xs font-medium">AI</span>
           </button>
 
           {/* GitHub Code Explorer Button */}
           <button
             onClick={() => handleToggleDock("github")}
             className={cn(
-              "cursor-pointer rounded-xl p-2.5 sm:px-3 sm:py-2 transition-all flex items-center gap-1.5 border",
+              "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0",
               isDockOpen && activeDockTab === "github"
                 ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-[0_0_12px_rgba(0,180,255,0.35)]"
-                : "bg-[#102033] text-neutral-300 hover:text-white hover:bg-[#172c47] border-white/5"
+                : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
             )}
-            title="GitHub Repository Code"
+            title="GitHub Repository Code Review"
           >
-            <Github size={18} />
-            <span className="hidden lg:inline text-xs font-medium">Code</span>
+            <Github size={16} />
+            <span className="hidden xl:inline text-xs font-medium">Code</span>
           </button>
 
-          {!isPersonalRoom && <EndCallButton />}
+          {/* 4. Host End Call For All Button (Inline in the same row!) */}
+          {!isPersonalRoom && (
+            <>
+              <div className="w-px h-6 bg-white/10 shrink-0 hidden sm:block" />
+              <EndCallButton />
+            </>
+          )}
+
         </div>
       </div>
     </section>
