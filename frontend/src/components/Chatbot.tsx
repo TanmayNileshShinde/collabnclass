@@ -141,7 +141,8 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
       }
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server responded with status ${response.status}`);
       }
 
       const data = await response.json();
@@ -156,12 +157,21 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chatbot error:", error);
+
+      const rawMsg = error?.message || "";
+      let displayText = "I'm having trouble connecting right now. Please verify your connection or try again in a moment.";
+
+      if (rawMsg.includes("GROQ_API_KEY")) {
+        displayText = "⚠️ **AI Study Assistant Setup Required**\n\nThe AI Assistant requires a **Groq API key** to provide instant answers and explanations.\n\nTo enable:\n1. Obtain a free key at [console.groq.com](https://console.groq.com)\n2. Set `GROQ_API_KEY=your_key` in `backend/.env`\n3. Restart the backend service.";
+      } else if (rawMsg) {
+        displayText = rawMsg;
+      }
 
       const errorMessage: ChatbotMessage = {
         id: (Date.now() + 1).toString(),
-        text: "I'm having trouble connecting right now. Please verify your connection or try again in a moment.",
+        text: displayText,
         isUser: false,
         timestamp: new Date(),
       };

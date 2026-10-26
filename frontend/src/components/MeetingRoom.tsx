@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
-  ScreenShareButton,
   ReactionsButton,
   RecordCallButton,
   CancelCallButton,
@@ -17,7 +16,7 @@ import Chatbot from "./Chatbot";
 import CustomParticipantsList from "./CustomParticipantsList";
 import MeetingChat from "./MeetingChat";
 import GithubRepoImporter from "./GithubRepoImporter";
-import Whiteboard from "./Whiteboard";
+const Whiteboard = lazy(() => import("./Whiteboard"));
 import MeetingSideDock, { SideDockTab } from "./MeetingSideDock";
 import {
   CustomVideoPlaceholder,
@@ -25,6 +24,8 @@ import {
 } from "./CustomVideoTileUI";
 import {
   Users,
+  Loader2,
+  MonitorUp,
   MessageSquare,
   Github,
   Bot,
@@ -230,7 +231,13 @@ const MeetingRoomContent = () => {
     useLocalParticipant,
     useCameraState,
     useMicrophoneState,
+    useScreenShareState,
   } = useCallStateHooks();
+
+  const {
+    screenShare,
+    isMute: isScreenShareMuted,
+  } = useScreenShareState();
 
   const {
     camera,
@@ -253,6 +260,39 @@ const MeetingRoomContent = () => {
   const call = useCall();
   const { toast } = useToast();
   const { user } = useUser();
+
+  const handleToggleScreenShare = async () => {
+    const isDisplayMediaSupported =
+      typeof navigator !== "undefined" &&
+      Boolean(navigator.mediaDevices?.getDisplayMedia);
+
+    if (!isDisplayMediaSupported) {
+      toast({
+        title: "Screen Share Unavailable",
+        description:
+          "Screen sharing is not supported on this mobile browser or device. Please use a desktop browser to share your screen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await screenShare.toggle();
+    } catch (err: any) {
+      if (
+        err?.name === "NotAllowedError" ||
+        err?.message?.includes("Permission denied")
+      ) {
+        return; // User cancelled prompt
+      }
+      console.error("Screen share error:", err);
+      toast({
+        title: "Screen Share Failed",
+        description: err?.message || "Could not toggle screen sharing.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const callingState = useCallCallingState();
   const callEndedAt = useCallEndedAt();
@@ -753,9 +793,22 @@ const MeetingRoomContent = () => {
         )}
       </MeetingSideDock>
 
-      {/* Fullscreen Whiteboard Overlay */}
+      {/* Fullscreen Whiteboard Overlay (Lazy Loaded) */}
       {showWhiteboard && (
-        <Whiteboard onClose={() => setShowWhiteboard(false)} />
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020813]/90 backdrop-blur-xl">
+              <div className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-[#071322] border border-cyan-500/30 text-cyan-400 shadow-2xl">
+                <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                <span className="text-sm font-medium text-slate-200">
+                  Initializing Collaborative Canvas...
+                </span>
+              </div>
+            </div>
+          }
+        >
+          <Whiteboard onClose={() => setShowWhiteboard(false)} />
+        </Suspense>
       )}
 
       {/* ========================================================
@@ -916,7 +969,25 @@ const MeetingRoomContent = () => {
 
           {/* 2. Collaboration & Sharing (Screen Share, Whiteboard, Hand, Reactions) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <ScreenShareButton />
+            {/* Screen Share Control with Mobile Capability Guard */}
+            <button
+              onClick={handleToggleScreenShare}
+              className={cn(
+                "cursor-pointer rounded-xl p-2 sm:px-2.5 sm:py-1.5 transition-all flex items-center gap-1.5 border shrink-0 active:scale-95",
+                !isScreenShareMuted
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                  : "bg-[#0e1e33] text-neutral-300 hover:text-cyan-300 hover:bg-[#152c4a] border-white/10"
+              )}
+              title={!isScreenShareMuted ? "Stop Sharing Screen" : "Share Your Screen"}
+            >
+              <MonitorUp
+                size={16}
+                className={!isScreenShareMuted ? "text-white" : "text-cyan-400"}
+              />
+              <span className="hidden xl:inline text-xs font-medium">
+                {!isScreenShareMuted ? "Sharing" : "Share"}
+              </span>
+            </button>
 
             {/* Whiteboard Button */}
             <button
