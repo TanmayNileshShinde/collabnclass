@@ -38,10 +38,12 @@ if (!PUBLISHABLE_KEY) {
             },
             variables: {
               colorText: '#fff',
-              colorPrimary: '#6B46C1',
-              colorBackground: '#0A0A0A',
-              colorInputBackground: '#1A1A1A',
+              colorPrimary: '#00B4D8',
+              colorBackground: '#040e1c',
+              colorInputBackground: '#071529',
               colorInputText: '#fff',
+              borderRadius: '0.875rem',
+              fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
             },
           }}
         >
