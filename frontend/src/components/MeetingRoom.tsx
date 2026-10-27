@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import {
   ReactionsButton,
   RecordCallButton,
@@ -300,9 +300,14 @@ const MeetingRoomContent = () => {
   const [isEndedByHost, setIsEndedByHost] = useState(false);
   const [endedByName, setEndedByName] = useState<string | undefined>();
 
-    // Ensure local video & audio are active and published upon entering joined call
+  const hasInitializedMediaRef = useRef(false);
+
+  // Ensure local video & audio are active upon entering joined call
   useEffect(() => {
     if (!call || callingState !== CallingState.JOINED) return;
+    if (hasInitializedMediaRef.current) return;
+    hasInitializedMediaRef.current = true;
+
     const isJoinMuted = window.sessionStorage.getItem("join_muted") === "true";
     if (isJoinMuted) {
       call.camera.disable().catch(console.warn);
@@ -310,54 +315,13 @@ const MeetingRoomContent = () => {
       return;
     }
 
-    const ensureMediaTracks = async () => {
-      try {
-        const isCamPublishing = call.publisher?.isPublishing?.("video" as any);
-        if (!isCamPublishing || !localParticipant?.videoStream) {
-          if (call.camera.state.status === "enabled") {
-            if (call.camera.state.mediaStream) {
-              await call.publishVideoStream(call.camera.state.mediaStream, {
-                preferredCodec: call.camera.preferredCodec,
-              }).catch(async () => {
-                await call.camera.disable();
-                await call.camera.enable();
-              });
-            } else {
-              await call.camera.disable();
-              await call.camera.enable();
-            }
-          } else {
-            await call.camera.enable();
-          }
-        }
-      } catch (err) {
-        console.warn("MeetingRoom camera auto-sync warning:", err);
-      }
-
-      try {
-        const isMicPublishing = call.publisher?.isPublishing?.("audio" as any);
-        if (!isMicPublishing) {
-          if (call.microphone.state.status === "enabled") {
-            if (call.microphone.state.mediaStream) {
-              await call.publishAudioStream(call.microphone.state.mediaStream).catch(async () => {
-                await call.microphone.disable();
-                await call.microphone.enable();
-              });
-            } else {
-              await call.microphone.disable();
-              await call.microphone.enable();
-            }
-          } else {
-            await call.microphone.enable();
-          }
-        }
-      } catch (err) {
-        console.warn("MeetingRoom mic auto-sync warning:", err);
-      }
-    };
-
-    ensureMediaTracks();
-  }, [call, callingState, localParticipant?.videoStream]);
+    if (call.camera.state.status !== "enabled") {
+      call.camera.enable().catch(console.warn);
+    }
+    if (call.microphone.state.status !== "enabled") {
+      call.microphone.enable().catch(console.warn);
+    }
+  }, [call, callingState]);
 
   const handleToggleCamera = async () => {
     try {
