@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  BaseVideo,
   useParticipantViewContext,
   VideoPlaceholderProps,
   useCall,
+  useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import { useUser } from "@clerk/clerk-react";
 import { MicOff, Pin, ShieldCheck } from "lucide-react";
@@ -69,16 +71,14 @@ export const ConnectionQualityBars = ({
 /**
  * CustomVideoPlaceholder
  * Displayed inside ParticipantView. If a video stream is active (SFU or local camera),
- * it renders the video element directly. Otherwise, it displays the cyberpunk avatar.
+ * it renders the video element via BaseVideo. Otherwise, it displays the cyberpunk avatar.
  */
 export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   participant,
   style,
   className,
 }) => {
-  const call = useCall();
   const { user } = useUser();
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [imageError, setImageError] = useState(false);
   const { raisedHands } = useClassroom();
   const isSpeaking = participant.isSpeaking;
@@ -88,91 +88,59 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   const isLocal =
     participant.isLocalParticipant || participant.userId === user?.id;
 
-  // Determine active video stream: SFU stream or local camera mediaStream
-  const localCameraActive = isLocal && call?.camera?.state?.status === "enabled";
+  const { useCameraState } = useCallStateHooks();
+  const { status: cameraStatus, mediaStream: localMediaStream } = useCameraState();
+
+  // Determine active video stream: SFU stream or reactive local camera mediaStream
   const activeStream =
     participant.videoStream ||
-    (localCameraActive ? call?.camera?.state?.mediaStream : undefined);
+    (isLocal && cameraStatus === "enabled" ? localMediaStream : undefined);
 
-  const [hasActiveVideo, setHasActiveVideo] = useState(() => {
-    if (!activeStream) return false;
-    const tracks = activeStream.getVideoTracks();
-    return tracks.length > 0 && tracks[0].readyState === "live" && tracks[0].enabled;
-  });
-
+  // Ensure local tracks are unmuted if camera status is enabled
   useEffect(() => {
-    if (!activeStream) {
-      setHasActiveVideo(false);
-      return;
-    }
-
-    const updateTrackStatus = () => {
-      const tracks = activeStream.getVideoTracks();
-      const live =
-        tracks.length > 0 &&
-        tracks[0].readyState === "live" &&
-        tracks[0].enabled;
-      setHasActiveVideo(live);
-    };
-
-    updateTrackStatus();
-    const interval = setInterval(updateTrackStatus, 300);
-
-    const [track] = activeStream.getVideoTracks();
-    if (track) {
-      track.addEventListener("mute", updateTrackStatus);
-      track.addEventListener("unmute", updateTrackStatus);
-      track.addEventListener("ended", updateTrackStatus);
-    }
-
-    return () => {
-      clearInterval(interval);
-      if (track) {
-        track.removeEventListener("mute", updateTrackStatus);
-        track.removeEventListener("unmute", updateTrackStatus);
-        track.removeEventListener("ended", updateTrackStatus);
-      }
-    };
-  }, [activeStream]);
-
-  // Bind stream to video element when live
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !activeStream || !hasActiveVideo) return;
-
-    if (video.srcObject !== activeStream) {
-      video.srcObject = activeStream;
-    }
-
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        if (err.name !== "AbortError") {
-          console.warn("Video playback error in placeholder:", err);
-        }
+    if (isLocal && cameraStatus === "enabled" && localMediaStream) {
+      localMediaStream.getVideoTracks().forEach((track) => {
+        if (!track.enabled) track.enabled = true;
       });
     }
-  }, [activeStream, hasActiveVideo]);
+  }, [isLocal, cameraStatus, localMediaStream]);
+
+  const hasLiveVideoTrack = Boolean(
+    activeStream &&
+      activeStream.getVideoTracks().length > 0 &&
+      activeStream.getVideoTracks().some((t) => t.readyState === "live" && t.enabled)
+  );
 
   return (
     <div
       style={style}
       className={cn(
         "absolute inset-0 flex flex-col items-center justify-center select-none overflow-hidden",
-        "bg-gradient-to-br from-[#020914] via-[#041324] to-[#020710]",
+        !hasLiveVideoTrack && "bg-gradient-to-br from-[#020914] via-[#041324] to-[#020710]",
         className
       )}
     >
-      {hasActiveVideo && activeStream ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
+      {hasLiveVideoTrack && activeStream ? (
+        <BaseVideo
+          stream={activeStream}
           className={cn(
             "w-full h-full object-cover",
             isLocal && "-scale-x-100"
           )}
+          ref={(videoEl: HTMLVideoElement | null) => {
+            if (videoEl) {
+              videoEl.muted = true;
+              videoEl.defaultMuted = true;
+              const play = () => {
+                if (videoEl.paused) {
+                  videoEl.play().catch(() => {});
+                }
+              };
+              play();
+              videoEl.onloadedmetadata = play;
+              videoEl.oncanplay = play;
+            }
+          }}
         />
       ) : (
         <>
@@ -270,7 +238,7 @@ export const CustomParticipantViewUI = () => {
   const isHost =
     call?.state.createdBy?.id === participant.userId ||
     call?.state.custom?.creatorId === participant.userId;
-  const isPinned = !!participant.pin;
+  const isPinned = !participant.pin;
 
   // Audio track status: muted if no audioStream or audio track not published
   const isMuted = !participant.audioStream;
