@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   useParticipantViewContext,
   VideoPlaceholderProps,
@@ -75,12 +75,60 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   style,
   className,
 }) => {
+  const { videoElement } = useParticipantViewContext();
+  const call = useCall();
+  const { user } = useUser();
   const [imageError, setImageError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const { raisedHands } = useClassroom();
   const isSpeaking = participant.isSpeaking;
   const isHandRaised = raisedHands.has(participant.userId);
   const displayName = participant.name || participant.userId || "Participant";
   const initials = getParticipantInitials(displayName);
+  const isLocal =
+    participant.isLocalParticipant || participant.userId === user?.id;
+
+  // Autoplay recovery & local camera stream re-binding for Chrome / Chromium
+  useEffect(() => {
+    if (!videoElement) return;
+
+    if (
+      isLocal &&
+      !videoElement.srcObject &&
+      call?.camera?.state?.mediaStream &&
+      call?.camera?.state?.status === "enabled"
+    ) {
+      videoElement.srcObject = call.camera.state.mediaStream;
+    }
+
+    const checkPlayState = () => {
+      if (videoElement) {
+        if (videoElement.paused) {
+          videoElement.play().catch(() => {});
+        }
+        setIsPlaying(!videoElement.paused && videoElement.readyState >= 2);
+      }
+    };
+
+    checkPlayState();
+    const interval = setInterval(checkPlayState, 400);
+
+    videoElement.addEventListener("loadedmetadata", checkPlayState);
+    videoElement.addEventListener("playing", checkPlayState);
+    videoElement.addEventListener("pause", checkPlayState);
+
+    return () => {
+      clearInterval(interval);
+      videoElement.removeEventListener("loadedmetadata", checkPlayState);
+      videoElement.removeEventListener("playing", checkPlayState);
+      videoElement.removeEventListener("pause", checkPlayState);
+    };
+  }, [videoElement, isLocal, call]);
+
+  // If video element is actively playing with valid stream, do not render placeholder over the feed
+  if (isPlaying) {
+    return null;
+  }
 
   return (
     <div
@@ -171,7 +219,7 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
  * Overlaid on every participant's video tile inside ParticipantView.
  */
 export const CustomParticipantViewUI = () => {
-  const { participant } = useParticipantViewContext();
+  const { participant, videoElement } = useParticipantViewContext();
   const call = useCall();
   const { user } = useUser();
   const { raisedHands } = useClassroom();
@@ -184,6 +232,24 @@ export const CustomParticipantViewUI = () => {
     call?.state.createdBy?.id === participant.userId ||
     call?.state.custom?.creatorId === participant.userId;
   const isPinned = !!participant.pin;
+
+  // Active autoplay safeguard inside tile overlay
+  useEffect(() => {
+    if (!videoElement) return;
+
+    if (
+      isLocal &&
+      !videoElement.srcObject &&
+      call?.camera?.state?.mediaStream &&
+      call?.camera?.state?.status === "enabled"
+    ) {
+      videoElement.srcObject = call.camera.state.mediaStream;
+    }
+
+    if (videoElement.paused) {
+      videoElement.play().catch(() => {});
+    }
+  }, [videoElement, isLocal, call]);
 
   // Audio track status: muted if no audioStream or audio track not published
   const isMuted = !participant.audioStream;

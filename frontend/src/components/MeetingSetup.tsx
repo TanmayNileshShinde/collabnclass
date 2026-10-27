@@ -243,10 +243,22 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       if (!isMicCamToggled) {
         window.sessionStorage.removeItem("join_muted");
         try {
-          await Promise.allSettled([
-            call.camera.enable(),
-            call.microphone.enable(),
-          ]);
+          if (call.camera.state.status !== "enabled") {
+            await call.camera.enable();
+          } else if (call.camera.state.mediaStream) {
+            await call.publishVideoStream(call.camera.state.mediaStream).catch(async () => {
+              await call.camera.disable();
+              await call.camera.enable();
+            });
+          }
+          if (call.microphone.state.status !== "enabled") {
+            await call.microphone.enable();
+          } else if (call.microphone.state.mediaStream) {
+            await call.publishAudioStream(call.microphone.state.mediaStream).catch(async () => {
+              await call.microphone.disable();
+              await call.microphone.enable();
+            });
+          }
         } catch (mediaErr) {
           console.warn("Failed to enable media on join:", mediaErr);
         }

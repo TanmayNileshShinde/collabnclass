@@ -300,19 +300,90 @@ const MeetingRoomContent = () => {
   const [isEndedByHost, setIsEndedByHost] = useState(false);
   const [endedByName, setEndedByName] = useState<string | undefined>();
 
-    // Ensure local video & audio are active upon entering joined call (unless user opted into stealth join)
+    // Ensure local video & audio are active and published upon entering joined call
   useEffect(() => {
     if (!call || callingState !== CallingState.JOINED) return;
     const isJoinMuted = window.sessionStorage.getItem("join_muted") === "true";
-    if (!isJoinMuted) {
-      if (call.camera.state.status !== "enabled") {
-        call.camera.enable().catch((e) => console.warn("MeetingRoom camera auto-enable warning:", e));
-      }
-      if (call.microphone.state.status !== "enabled") {
-        call.microphone.enable().catch((e) => console.warn("MeetingRoom mic auto-enable warning:", e));
-      }
+    if (isJoinMuted) {
+      call.camera.disable().catch(console.warn);
+      call.microphone.disable().catch(console.warn);
+      return;
     }
-  }, [call, callingState]);
+
+    const ensureMediaTracks = async () => {
+      try {
+        const isCamPublishing = call.publisher?.isPublishing?.("video" as any);
+        if (!isCamPublishing || !localParticipant?.videoStream) {
+          if (call.camera.state.status === "enabled") {
+            if (call.camera.state.mediaStream) {
+              await call.publishVideoStream(call.camera.state.mediaStream, {
+                preferredCodec: call.camera.preferredCodec,
+              }).catch(async () => {
+                await call.camera.disable();
+                await call.camera.enable();
+              });
+            } else {
+              await call.camera.disable();
+              await call.camera.enable();
+            }
+          } else {
+            await call.camera.enable();
+          }
+        }
+      } catch (err) {
+        console.warn("MeetingRoom camera auto-sync warning:", err);
+      }
+
+      try {
+        const isMicPublishing = call.publisher?.isPublishing?.("audio" as any);
+        if (!isMicPublishing) {
+          if (call.microphone.state.status === "enabled") {
+            if (call.microphone.state.mediaStream) {
+              await call.publishAudioStream(call.microphone.state.mediaStream).catch(async () => {
+                await call.microphone.disable();
+                await call.microphone.enable();
+              });
+            } else {
+              await call.microphone.disable();
+              await call.microphone.enable();
+            }
+          } else {
+            await call.microphone.enable();
+          }
+        }
+      } catch (err) {
+        console.warn("MeetingRoom mic auto-sync warning:", err);
+      }
+    };
+
+    ensureMediaTracks();
+  }, [call, callingState, localParticipant?.videoStream]);
+
+  const handleToggleCamera = async () => {
+    try {
+      if (isCameraMuted) {
+        await call?.camera.enable();
+      } else {
+        await call?.camera.disable();
+      }
+    } catch (err) {
+      console.warn("Camera toggle fallback:", err);
+      camera.toggle();
+    }
+  };
+
+  const handleToggleMic = async () => {
+    try {
+      if (isMicMuted) {
+        await call?.microphone.enable();
+      } else {
+        await call?.microphone.disable();
+      }
+    } catch (err) {
+      console.warn("Mic toggle fallback:", err);
+      microphone.toggle();
+    }
+  };
 
 // Live ticking clock
   const [time, setTime] = useState(
@@ -545,6 +616,8 @@ const MeetingRoomContent = () => {
         }
         .str-video__participant-view video,
         .str-video__participant-view .str-video__video {
+          width: 100% !important;
+          height: 100% !important;
           object-fit: cover !important;
           border-radius: 1.25rem !important;
         }
@@ -829,7 +902,7 @@ const MeetingRoomContent = () => {
               )}
             >
               <button
-                onClick={() => microphone.toggle()}
+                onClick={handleToggleMic}
                 className="cursor-pointer rounded-l-xl p-2 sm:px-2.5 sm:py-1.5 transition-colors flex items-center gap-1.5 active:scale-95"
                 title={isMicMuted ? "Unmute Microphone" : "Mute Microphone"}
               >
@@ -901,7 +974,7 @@ const MeetingRoomContent = () => {
               )}
             >
               <button
-                onClick={() => camera.toggle()}
+                onClick={handleToggleCamera}
                 className="cursor-pointer rounded-l-xl p-2 sm:px-2.5 sm:py-1.5 transition-colors flex items-center gap-1.5 active:scale-95"
                 title={isCameraMuted ? "Turn On Camera" : "Turn Off Camera"}
               >
