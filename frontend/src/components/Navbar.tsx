@@ -163,8 +163,27 @@ const Navbar = () => {
                 appearance={{
                   elements: {
                     avatarBox: theme === 'dark'
-                      ? "w-9 h-9 ring-2 ring-[rgba(0,180,255,0.25)] ring-offset-2 ring-offset-transparent transition-all duration-300"
-                      : "w-9 h-9 ring-2 ring-[rgba(0,140,240,0.35)] ring-offset-2 ring-offset-transparent transition-all duration-300"
+                      ? "w-9 h-9 ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-transparent transition-all duration-300 hover:ring-cyan-300 shadow-[0_0_12px_rgba(0,180,255,0.3)]"
+                      : "w-9 h-9 ring-2 ring-sky-400/60 ring-offset-2 ring-offset-transparent transition-all duration-300 hover:ring-sky-500 shadow-[0_2px_8px_rgba(0,120,220,0.15)]",
+                    userButtonPopoverCard: theme === 'dark'
+                      ? "!bg-[#040e1c]/95 !backdrop-blur-2xl !border !border-cyan-500/30 !rounded-2xl !shadow-[0_16px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(0,180,255,0.2)] !text-white overflow-hidden"
+                      : "!bg-white/95 !backdrop-blur-2xl !border !border-sky-200 !rounded-2xl !shadow-[0_16px_35px_rgba(0,80,180,0.12)] !text-slate-800 overflow-hidden",
+                    userButtonPopoverMain: "!bg-transparent !p-2",
+                    userPreview: theme === 'dark'
+                      ? "!p-3 !mb-2 !rounded-xl !bg-[#07172e]/80 !border !border-cyan-500/20"
+                      : "!p-3 !mb-2 !rounded-xl !bg-sky-50/80 !border !border-sky-200/60",
+                    userPreviewAvatarBox: "!w-10 !h-10 !rounded-xl !ring-2 " + (theme === 'dark' ? "!ring-cyan-400/50 !shadow-[0_0_10px_rgba(0,180,255,0.4)]" : "!ring-sky-400/60"),
+                    userPreviewMainIdentifier: "!font-bold !text-sm " + (theme === 'dark' ? "!text-white" : "!text-slate-900"),
+                    userPreviewSecondaryIdentifier: "!text-xs " + (theme === 'dark' ? "!text-cyan-200/70" : "!text-slate-500"),
+                    userButtonPopoverActions: "!space-y-1 !p-1",
+                    userButtonPopoverActionButton: theme === 'dark'
+                      ? "!rounded-xl !px-3 !py-2.5 !text-slate-200 hover:!text-cyan-300 hover:!bg-cyan-500/15 !transition-all active:!scale-[0.98]"
+                      : "!rounded-xl !px-3 !py-2.5 !text-slate-700 hover:!text-sky-600 hover:!bg-sky-100/70 !transition-all active:!scale-[0.98]",
+                    userButtonPopoverActionButtonIcon: theme === 'dark' ? "!text-cyan-400" : "!text-sky-600",
+                    userButtonPopoverActionButtonText: "!text-xs !font-medium",
+                    userButtonPopoverFooter: theme === 'dark'
+                      ? "!border-t !border-cyan-500/20 !bg-[#020813]/80 !py-2.5 !px-3 !text-neutral-400"
+                      : "!border-t !border-sky-100 !bg-slate-50/80 !py-2.5 !px-3 !text-slate-400",
                   }
                 }}
               />
