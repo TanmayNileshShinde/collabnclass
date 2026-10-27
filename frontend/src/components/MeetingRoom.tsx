@@ -317,9 +317,17 @@ const MeetingRoomContent = () => {
 
     if (call.camera.state.status !== "enabled") {
       call.camera.enable().catch(console.warn);
+    } else {
+      call.camera.state.mediaStream?.getVideoTracks()?.forEach((track) => {
+        if (!track.enabled) track.enabled = true;
+      });
     }
     if (call.microphone.state.status !== "enabled") {
       call.microphone.enable().catch(console.warn);
+    } else {
+      call.microphone.state.mediaStream?.getAudioTracks()?.forEach((track) => {
+        if (!track.enabled) track.enabled = true;
+      });
     }
   }, [call, callingState]);
 
