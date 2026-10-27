@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   useParticipantViewContext,
   VideoPlaceholderProps,
@@ -68,18 +68,18 @@ export const ConnectionQualityBars = ({
 
 /**
  * CustomVideoPlaceholder
- * Displayed inside ParticipantView when a participant's camera is turned off.
+ * Displayed inside ParticipantView. If a video stream is active (SFU or local camera),
+ * it renders the video element directly. Otherwise, it displays the cyberpunk avatar.
  */
 export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   participant,
   style,
   className,
 }) => {
-  const { videoElement } = useParticipantViewContext();
   const call = useCall();
   const { user } = useUser();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [imageError, setImageError] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const { raisedHands } = useClassroom();
   const isSpeaking = participant.isSpeaking;
   const isHandRaised = raisedHands.has(participant.userId);
@@ -88,47 +88,71 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   const isLocal =
     participant.isLocalParticipant || participant.userId === user?.id;
 
-  // Autoplay recovery & local camera stream re-binding for Chrome / Chromium
-  useEffect(() => {
-    if (!videoElement) return;
+  // Determine active video stream: SFU stream or local camera mediaStream
+  const localCameraActive = isLocal && call?.camera?.state?.status === "enabled";
+  const activeStream =
+    participant.videoStream ||
+    (localCameraActive ? call?.camera?.state?.mediaStream : undefined);
 
-    if (
-      isLocal &&
-      !videoElement.srcObject &&
-      call?.camera?.state?.mediaStream &&
-      call?.camera?.state?.status === "enabled"
-    ) {
-      videoElement.srcObject = call.camera.state.mediaStream;
+  const [hasActiveVideo, setHasActiveVideo] = useState(() => {
+    if (!activeStream) return false;
+    const tracks = activeStream.getVideoTracks();
+    return tracks.length > 0 && tracks[0].readyState === "live" && tracks[0].enabled;
+  });
+
+  useEffect(() => {
+    if (!activeStream) {
+      setHasActiveVideo(false);
+      return;
     }
 
-    const checkPlayState = () => {
-      if (videoElement) {
-        if (videoElement.paused) {
-          videoElement.play().catch(() => {});
-        }
-        setIsPlaying(!videoElement.paused && videoElement.readyState >= 2);
-      }
+    const updateTrackStatus = () => {
+      const tracks = activeStream.getVideoTracks();
+      const live =
+        tracks.length > 0 &&
+        tracks[0].readyState === "live" &&
+        tracks[0].enabled;
+      setHasActiveVideo(live);
     };
 
-    checkPlayState();
-    const interval = setInterval(checkPlayState, 400);
+    updateTrackStatus();
+    const interval = setInterval(updateTrackStatus, 300);
 
-    videoElement.addEventListener("loadedmetadata", checkPlayState);
-    videoElement.addEventListener("playing", checkPlayState);
-    videoElement.addEventListener("pause", checkPlayState);
+    const [track] = activeStream.getVideoTracks();
+    if (track) {
+      track.addEventListener("mute", updateTrackStatus);
+      track.addEventListener("unmute", updateTrackStatus);
+      track.addEventListener("ended", updateTrackStatus);
+    }
 
     return () => {
       clearInterval(interval);
-      videoElement.removeEventListener("loadedmetadata", checkPlayState);
-      videoElement.removeEventListener("playing", checkPlayState);
-      videoElement.removeEventListener("pause", checkPlayState);
+      if (track) {
+        track.removeEventListener("mute", updateTrackStatus);
+        track.removeEventListener("unmute", updateTrackStatus);
+        track.removeEventListener("ended", updateTrackStatus);
+      }
     };
-  }, [videoElement, isLocal, call]);
+  }, [activeStream]);
 
-  // If video element is actively playing with valid stream, do not render placeholder over the feed
-  if (isPlaying) {
-    return null;
-  }
+  // Bind stream to video element when live
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !activeStream || !hasActiveVideo) return;
+
+    if (video.srcObject !== activeStream) {
+      video.srcObject = activeStream;
+    }
+
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        if (err.name !== "AbortError") {
+          console.warn("Video playback error in placeholder:", err);
+        }
+      });
+    }
+  }, [activeStream, hasActiveVideo]);
 
   return (
     <div
@@ -139,77 +163,92 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
         className
       )}
     >
-      {/* Atmospheric Ambient Glow */}
-      <div
-        className={cn(
-          "absolute inset-0 transition-opacity duration-300 pointer-events-none",
-          isSpeaking
-            ? "opacity-60 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500/25 via-blue-600/10 to-transparent"
-            : isHandRaised
-            ? "opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/25 via-orange-600/10 to-transparent"
-            : "opacity-20 bg-[radial-gradient(circle_at_center,_rgba(0,180,255,0.15)_0%,_transparent_70%)]"
-        )}
-      />
-
-      {/* Cyber Frame Grid Pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, rgba(0,200,255,0.8) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,200,255,0.8) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      />
-
-      {/* Avatar Container with Active Speaker Ring or Hand Raised Ring */}
-      <div className="relative z-10 flex flex-col items-center px-4">
-        <div
+      {hasActiveVideo && activeStream ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
           className={cn(
-            "relative flex items-center justify-center rounded-3xl transition-all duration-300",
-            "w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32",
-            isSpeaking
-              ? "ring-4 ring-cyan-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_35px_rgba(0,220,255,0.7)] scale-105"
-              : isHandRaised
-              ? "ring-4 ring-amber-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_30px_rgba(245,158,11,0.6)]"
-              : "ring-2 ring-cyan-500/25 shadow-2xl"
+            "w-full h-full object-cover",
+            isLocal && "-scale-x-100"
           )}
-        >
-          {participant.image && !imageError ? (
-            <img
-              src={participant.image}
-              alt={displayName}
-              onError={() => setImageError(true)}
-              className="w-full h-full rounded-3xl object-cover"
-            />
-          ) : (
-            <div className="w-full h-full rounded-3xl bg-gradient-to-tr from-blue-700 via-sky-600 to-cyan-500 flex items-center justify-center text-white text-2xl sm:text-3xl md:text-4xl font-bold tracking-wider font-syne shadow-inner">
-              {initials}
+        />
+      ) : (
+        <>
+          {/* Atmospheric Ambient Glow */}
+          <div
+            className={cn(
+              "absolute inset-0 transition-opacity duration-300 pointer-events-none",
+              isSpeaking
+                ? "opacity-60 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500/25 via-blue-600/10 to-transparent"
+                : isHandRaised
+                ? "opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/25 via-orange-600/10 to-transparent"
+                : "opacity-20 bg-[radial-gradient(circle_at_center,_rgba(0,180,255,0.15)_0%,_transparent_70%)]"
+            )}
+          />
+
+          {/* Cyber Frame Grid Pattern */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.03]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, rgba(0,200,255,0.8) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,200,255,0.8) 1px, transparent 1px)",
+              backgroundSize: "24px 24px",
+            }}
+          />
+
+          {/* Avatar Container with Active Speaker Ring or Hand Raised Ring */}
+          <div className="relative z-10 flex flex-col items-center px-4">
+            <div
+              className={cn(
+                "relative flex items-center justify-center rounded-3xl transition-all duration-300",
+                "w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32",
+                isSpeaking
+                  ? "ring-4 ring-cyan-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_35px_rgba(0,220,255,0.7)] scale-105"
+                  : isHandRaised
+                  ? "ring-4 ring-amber-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_30px_rgba(245,158,11,0.6)]"
+                  : "ring-2 ring-cyan-500/25 shadow-2xl"
+              )}
+            >
+              {participant.image && !imageError ? (
+                <img
+                  src={participant.image}
+                  alt={displayName}
+                  onError={() => setImageError(true)}
+                  className="w-full h-full rounded-3xl object-cover"
+                />
+              ) : (
+                <div className="w-full h-full rounded-3xl bg-gradient-to-tr from-blue-700 via-sky-600 to-cyan-500 flex items-center justify-center text-white text-2xl sm:text-3xl md:text-4xl font-bold tracking-wider font-syne shadow-inner">
+                  {initials}
+                </div>
+              )}
+
+              {/* Active audio ripple halo */}
+              {isSpeaking && (
+                <span className="absolute inset-0 rounded-3xl border-2 border-cyan-400 animate-ping opacity-25 pointer-events-none" />
+              )}
+
+              {/* Hand raised badge on avatar */}
+              {isHandRaised && (
+                <span className="absolute -top-2 -right-2 z-20 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-base shadow-[0_0_15px_rgba(245,158,11,0.85)] border-2 border-[#030a16] animate-bounce">
+                  ✋
+                </span>
+              )}
             </div>
-          )}
 
-          {/* Active audio ripple halo */}
-          {isSpeaking && (
-            <span className="absolute inset-0 rounded-3xl border-2 border-cyan-400 animate-ping opacity-25 pointer-events-none" />
-          )}
-
-          {/* Hand raised badge on avatar */}
-          {isHandRaised && (
-            <span className="absolute -top-2 -right-2 z-20 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-base shadow-[0_0_15px_rgba(245,158,11,0.85)] border-2 border-[#030a16] animate-bounce">
-              ✋
-            </span>
-          )}
-        </div>
-
-        {/* Hand Raised badge on avatar placeholder */}
-        {isHandRaised && (
-          <div className="flex items-center gap-1 mt-3 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
-            <span className="text-xs">✋</span>
-            <span className="text-[11px] font-bold text-amber-300 tracking-wide">
-              Hand Raised
-            </span>
+            {/* Hand Raised badge on avatar placeholder */}
+            {isHandRaised && (
+              <div className="flex items-center gap-1 mt-3 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
+                <span className="text-xs">✋</span>
+                <span className="text-[11px] font-bold text-amber-300 tracking-wide">
+                  Hand Raised
+                </span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };
@@ -219,7 +258,7 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
  * Overlaid on every participant's video tile inside ParticipantView.
  */
 export const CustomParticipantViewUI = () => {
-  const { participant, videoElement } = useParticipantViewContext();
+  const { participant } = useParticipantViewContext();
   const call = useCall();
   const { user } = useUser();
   const { raisedHands } = useClassroom();
@@ -232,24 +271,6 @@ export const CustomParticipantViewUI = () => {
     call?.state.createdBy?.id === participant.userId ||
     call?.state.custom?.creatorId === participant.userId;
   const isPinned = !!participant.pin;
-
-  // Active autoplay safeguard inside tile overlay
-  useEffect(() => {
-    if (!videoElement) return;
-
-    if (
-      isLocal &&
-      !videoElement.srcObject &&
-      call?.camera?.state?.mediaStream &&
-      call?.camera?.state?.status === "enabled"
-    ) {
-      videoElement.srcObject = call.camera.state.mediaStream;
-    }
-
-    if (videoElement.paused) {
-      videoElement.play().catch(() => {});
-    }
-  }, [videoElement, isLocal, call]);
 
   // Audio track status: muted if no audioStream or audio track not published
   const isMuted = !participant.audioStream;

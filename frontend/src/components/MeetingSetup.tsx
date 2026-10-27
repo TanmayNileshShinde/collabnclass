@@ -242,36 +242,16 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       await call.join();
       if (!isMicCamToggled) {
         window.sessionStorage.removeItem("join_muted");
-        try {
-          if (call.camera.state.status !== "enabled") {
-            await call.camera.enable();
-          } else if (call.camera.state.mediaStream) {
-            await call.publishVideoStream(call.camera.state.mediaStream).catch(async () => {
-              await call.camera.disable();
-              await call.camera.enable();
-            });
-          }
-          if (call.microphone.state.status !== "enabled") {
-            await call.microphone.enable();
-          } else if (call.microphone.state.mediaStream) {
-            await call.publishAudioStream(call.microphone.state.mediaStream).catch(async () => {
-              await call.microphone.disable();
-              await call.microphone.enable();
-            });
-          }
-        } catch (mediaErr) {
-          console.warn("Failed to enable media on join:", mediaErr);
+        if (call.camera.state.status !== "enabled") {
+          call.camera.enable().catch(console.warn);
+        }
+        if (call.microphone.state.status !== "enabled") {
+          call.microphone.enable().catch(console.warn);
         }
       } else {
         window.sessionStorage.setItem("join_muted", "true");
-        try {
-          await Promise.allSettled([
-            call.camera.disable(),
-            call.microphone.disable(),
-          ]);
-        } catch (mediaErr) {
-          console.warn("Failed to mute media on join:", mediaErr);
-        }
+        call.camera.disable().catch(console.warn);
+        call.microphone.disable().catch(console.warn);
       }
       setIsSetupComplete(true);
     } catch (error) {
