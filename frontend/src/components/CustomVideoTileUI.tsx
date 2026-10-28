@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
+  SfuModels,
   useParticipantViewContext,
   VideoPlaceholderProps,
   useCall,
@@ -262,6 +263,8 @@ export const CustomParticipantViewUI = () => {
   const call = useCall();
   const { user } = useUser();
   const { raisedHands } = useClassroom();
+  const { useMicrophoneState } = useCallStateHooks();
+  const { isMute: isLocalMicMuted } = useMicrophoneState();
 
   const isSpeaking = participant.isSpeaking;
   const isHandRaised = raisedHands.has(participant.userId);
@@ -270,10 +273,13 @@ export const CustomParticipantViewUI = () => {
   const isHost =
     call?.state.createdBy?.id === participant.userId ||
     call?.state.custom?.creatorId === participant.userId;
-  const isPinned = !participant.pin;
+  const isPinned = Boolean(participant.pin);
 
-  // Audio track status: muted if no audioStream or audio track not published
-  const isMuted = !participant.audioStream;
+  // Audio track status: reactive microphone state for local participant, published SFU track for remote
+  const isMuted = isLocal
+    ? Boolean(isLocalMicMuted)
+    : !participant.publishedTracks.includes(SfuModels.TrackType.AUDIO) &&
+      !participant.audioStream;
   const displayName = participant.name || participant.userId || "Participant";
 
   return (
