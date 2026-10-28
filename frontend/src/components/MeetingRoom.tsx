@@ -309,6 +309,7 @@ const MeetingRoomContent = () => {
     hasInitializedMediaRef.current = true;
 
     const isJoinMuted = window.sessionStorage.getItem("join_muted") === "true";
+    window.sessionStorage.removeItem("join_muted");
     if (isJoinMuted) {
       call.camera.disable().catch(console.warn);
       call.microphone.disable().catch(console.warn);
@@ -377,6 +378,10 @@ const MeetingRoomContent = () => {
     try {
       if (isCameraMuted) {
         await call?.camera.enable();
+        const stream = call?.camera.state.mediaStream;
+        if (stream && stream.getVideoTracks().some((t) => t.readyState === "live")) {
+          await call?.publishVideoStream(stream);
+        }
       } else {
         await call?.camera.disable();
       }
@@ -390,6 +395,10 @@ const MeetingRoomContent = () => {
     try {
       if (isMicMuted) {
         await call?.microphone.enable();
+        const stream = call?.microphone.state.mediaStream;
+        if (stream && stream.getAudioTracks().some((t) => t.readyState === "live")) {
+          await call?.publishAudioStream(stream);
+        }
       } else {
         await call?.microphone.disable();
       }
