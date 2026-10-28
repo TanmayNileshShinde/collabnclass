@@ -18,6 +18,7 @@ import MeetingChat from "./MeetingChat";
 import GithubRepoImporter from "./GithubRepoImporter";
 const Whiteboard = lazy(() => import("./Whiteboard"));
 import MeetingSideDock, { SideDockTab } from "./MeetingSideDock";
+import NetworkDiagnosticsModal from "./NetworkDiagnosticsModal";
 import {
   CustomVideoPlaceholder,
   CustomParticipantViewUI,
@@ -38,6 +39,7 @@ import {
   ArrowRight,
   Radio,
   ShieldCheck,
+  Activity,
   Mic,
   MicOff,
   Video,
@@ -223,6 +225,7 @@ const MeetingRoomContent = () => {
   const [isDockOpen, setIsDockOpen] = useState(false);
   const [activeDockTab, setActiveDockTab] = useState<SideDockTab>("chat");
   const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
 
   const {
     useCallCallingState,
@@ -740,14 +743,18 @@ const MeetingRoomContent = () => {
           </div>
         </div>
 
-        {/* Center: Live Broadcast Telemetry (Hidden on small mobile) */}
-        <div className="hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-[#040e1c]/85 backdrop-blur-xl border border-[rgba(0,180,255,0.2)] shadow-lg">
+        {/* Center: Live Broadcast Telemetry & Stage Diagnostics Trigger */}
+        <button
+          onClick={() => setIsDiagnosticsOpen(true)}
+          className="pointer-events-auto hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-[#040e1c]/85 hover:bg-[#07172c] backdrop-blur-xl border border-[rgba(0,180,255,0.2)] hover:border-cyan-400/50 shadow-lg transition-all active:scale-95 cursor-pointer group"
+          title="Click to view Stage Telemetry & Hardware Diagnostics"
+        >
           <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300">
             <Clock size={12} className="text-cyan-400 animate-pulse" />
             <span>{time}</span>
           </div>
           <span className="w-px h-3.5 bg-white/10" />
-          <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300">
+          <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300 group-hover:text-white transition-colors">
             <Radio size={12} className="text-cyan-400" />
             <span>SFU Mesh</span>
           </div>
@@ -756,7 +763,12 @@ const MeetingRoomContent = () => {
             <ShieldCheck size={13} />
             <span>Encrypted</span>
           </div>
-        </div>
+          <span className="w-px h-3.5 bg-white/10" />
+          <div className="flex items-center gap-1 text-[11px] font-mono text-cyan-400/80 group-hover:text-cyan-300">
+            <Activity size={12} />
+            <span>Diagnostics</span>
+          </div>
+        </button>
 
         {/* Right: Quick Tools (People Count & Info Dropdown) */}
         <div className="pointer-events-auto flex items-center gap-2">
@@ -906,6 +918,12 @@ const MeetingRoomContent = () => {
           <Whiteboard onClose={() => setShowWhiteboard(false)} />
         </Suspense>
       )}
+
+      {/* Real-time Network & Audio Diagnostics Modal */}
+      <NetworkDiagnosticsModal
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
+      />
 
       {/* ========================================================
           UNIFIED BOTTOM COCKPIT DOCK (Single Sleek Bar, Industry-Standard Groups)
