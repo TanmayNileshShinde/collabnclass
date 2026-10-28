@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  BaseVideo,
   useParticipantViewContext,
   VideoPlaceholderProps,
   useCall,
@@ -69,9 +68,62 @@ export const ConnectionQualityBars = ({
 };
 
 /**
+ * ActiveVideoRenderer
+ * Resilient native HTML5 video renderer.
+ * Binds MediaStream with explicit muted autoplay and ensures playback on Chromium.
+ */
+const ActiveVideoRenderer: React.FC<{
+  stream: MediaStream;
+  isLocal: boolean;
+}> = ({ stream, isLocal }) => {
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+
+  React.useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !stream) return;
+
+    if (videoEl.srcObject !== stream) {
+      videoEl.srcObject = stream;
+    }
+    videoEl.muted = true;
+    videoEl.defaultMuted = true;
+
+    const playVideo = () => {
+      if (videoEl.paused) {
+        videoEl.play().catch(() => {});
+      }
+    };
+
+    playVideo();
+    videoEl.addEventListener("loadedmetadata", playVideo);
+    videoEl.addEventListener("canplay", playVideo);
+    videoEl.addEventListener("loadeddata", playVideo);
+
+    return () => {
+      videoEl.removeEventListener("loadedmetadata", playVideo);
+      videoEl.removeEventListener("canplay", playVideo);
+      videoEl.removeEventListener("loadeddata", playVideo);
+    };
+  }, [stream]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      className={cn(
+        "w-full h-full object-cover",
+        isLocal && "-scale-x-100"
+      )}
+    />
+  );
+};
+
+/**
  * CustomVideoPlaceholder
  * Displayed inside ParticipantView. If a video stream is active (SFU or local camera),
- * it renders the video element via BaseVideo. Otherwise, it displays the cyberpunk avatar.
+ * it renders the video element via ActiveVideoRenderer. Otherwise, it displays the cyberpunk avatar.
  */
 export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   participant,
@@ -121,27 +173,7 @@ export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
       )}
     >
       {hasLiveVideoTrack && activeStream ? (
-        <BaseVideo
-          stream={activeStream}
-          className={cn(
-            "w-full h-full object-cover",
-            isLocal && "-scale-x-100"
-          )}
-          ref={(videoEl: HTMLVideoElement | null) => {
-            if (videoEl) {
-              videoEl.muted = true;
-              videoEl.defaultMuted = true;
-              const play = () => {
-                if (videoEl.paused) {
-                  videoEl.play().catch(() => {});
-                }
-              };
-              play();
-              videoEl.onloadedmetadata = play;
-              videoEl.oncanplay = play;
-            }
-          }}
-        />
+        <ActiveVideoRenderer stream={activeStream} isLocal={isLocal} />
       ) : (
         <>
           {/* Atmospheric Ambient Glow */}
