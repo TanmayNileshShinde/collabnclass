@@ -302,7 +302,7 @@ const MeetingRoomContent = () => {
 
   const hasInitializedMediaRef = useRef(false);
 
-  // Ensure local video & audio are active upon entering joined call
+  // Ensure local video & audio are active and published to SFU upon entering joined call
   useEffect(() => {
     if (!call || callingState !== CallingState.JOINED) return;
     if (hasInitializedMediaRef.current) return;
@@ -315,21 +315,63 @@ const MeetingRoomContent = () => {
       return;
     }
 
-    if (call.camera.state.status !== "enabled") {
-      call.camera.enable().catch(console.warn);
-    } else {
-      call.camera.state.mediaStream?.getVideoTracks()?.forEach((track) => {
-        if (!track.enabled) track.enabled = true;
-      });
-    }
-    if (call.microphone.state.status !== "enabled") {
-      call.microphone.enable().catch(console.warn);
-    } else {
-      call.microphone.state.mediaStream?.getAudioTracks()?.forEach((track) => {
-        if (!track.enabled) track.enabled = true;
-      });
-    }
+    const initJoinedMedia = async () => {
+      try {
+        if (call.camera.state.status !== "enabled") {
+          await call.camera.enable();
+        } else {
+          const stream = call.camera.state.mediaStream;
+          stream?.getVideoTracks()?.forEach((track) => {
+            if (!track.enabled) track.enabled = true;
+          });
+          if (stream && stream.getVideoTracks().some((t) => t.readyState === "live")) {
+            await call.publishVideoStream(stream);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to publish video stream on join:", err);
+      }
+
+      try {
+        if (call.microphone.state.status !== "enabled") {
+          await call.microphone.enable();
+        } else {
+          const stream = call.microphone.state.mediaStream;
+          stream?.getAudioTracks()?.forEach((track) => {
+            if (!track.enabled) track.enabled = true;
+          });
+          if (stream && stream.getAudioTracks().some((t) => t.readyState === "live")) {
+            await call.publishAudioStream(stream);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to publish audio stream on join:", err);
+      }
+    };
+
+    initJoinedMedia();
   }, [call, callingState]);
+
+  // Autoplay watchdog: Chromium pauses video elements on dynamic srcObject change unless explicitly played
+  useEffect(() => {
+    if (callingState !== CallingState.JOINED) return;
+
+    const unpauseVideos = () => {
+      const videoEls = document.querySelectorAll<HTMLVideoElement>(
+        ".str-video__participant-view video"
+      );
+      videoEls.forEach((el) => {
+        if (el.srcObject && el.paused) {
+          el.muted = true;
+          el.play().catch(() => {});
+        }
+      });
+    };
+
+    unpauseVideos();
+    const interval = setInterval(unpauseVideos, 1000);
+    return () => clearInterval(interval);
+  }, [callingState]);
 
   const handleToggleCamera = async () => {
     try {
