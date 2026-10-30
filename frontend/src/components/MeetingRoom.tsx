@@ -323,33 +323,17 @@ const MeetingRoomContent = () => {
       try {
         if (call.camera.state.status !== "enabled") {
           await call.camera.enable();
-        } else {
-          const stream = call.camera.state.mediaStream;
-          stream?.getVideoTracks()?.forEach((track) => {
-            if (!track.enabled) track.enabled = true;
-          });
-          if (stream && stream.getVideoTracks().some((t) => t.readyState === "live")) {
-            await call.publishVideoStream(stream);
-          }
         }
       } catch (err) {
-        console.warn("Failed to publish video stream on join:", err);
+        console.warn("Failed to enable camera on join:", err);
       }
 
       try {
         if (call.microphone.state.status !== "enabled") {
           await call.microphone.enable();
-        } else {
-          const stream = call.microphone.state.mediaStream;
-          stream?.getAudioTracks()?.forEach((track) => {
-            if (!track.enabled) track.enabled = true;
-          });
-          if (stream && stream.getAudioTracks().some((t) => t.readyState === "live")) {
-            await call.publishAudioStream(stream);
-          }
         }
       } catch (err) {
-        console.warn("Failed to publish audio stream on join:", err);
+        console.warn("Failed to enable microphone on join:", err);
       }
     };
 
@@ -362,7 +346,7 @@ const MeetingRoomContent = () => {
 
     const unpauseVideos = () => {
       const videoEls = document.querySelectorAll<HTMLVideoElement>(
-        ".str-video__participant-view video"
+        ".str-video__participant-view video.str-video__video"
       );
       videoEls.forEach((el) => {
         if (el.srcObject && el.paused) {
@@ -381,10 +365,6 @@ const MeetingRoomContent = () => {
     try {
       if (isCameraMuted) {
         await call?.camera.enable();
-        const stream = call?.camera.state.mediaStream;
-        if (stream && stream.getVideoTracks().some((t) => t.readyState === "live")) {
-          await call?.publishVideoStream(stream);
-        }
       } else {
         await call?.camera.disable();
       }
@@ -398,10 +378,6 @@ const MeetingRoomContent = () => {
     try {
       if (isMicMuted) {
         await call?.microphone.enable();
-        const stream = call?.microphone.state.mediaStream;
-        if (stream && stream.getAudioTracks().some((t) => t.readyState === "live")) {
-          await call?.publishAudioStream(stream);
-        }
       } else {
         await call?.microphone.disable();
       }

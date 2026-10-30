@@ -243,15 +243,15 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       if (!isMicCamToggled) {
         window.sessionStorage.removeItem("join_muted");
         if (call.camera.state.status !== "enabled") {
-          call.camera.enable().catch(console.warn);
+          await call.camera.enable().catch(console.warn);
         }
         if (call.microphone.state.status !== "enabled") {
-          call.microphone.enable().catch(console.warn);
+          await call.microphone.enable().catch(console.warn);
         }
       } else {
         window.sessionStorage.setItem("join_muted", "true");
-        call.camera.disable().catch(console.warn);
-        call.microphone.disable().catch(console.warn);
+        await call.camera.disable().catch(console.warn);
+        await call.microphone.disable().catch(console.warn);
       }
       setIsSetupComplete(true);
     } catch (error) {
