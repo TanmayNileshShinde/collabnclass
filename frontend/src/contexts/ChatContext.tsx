@@ -189,9 +189,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendMessage = useCallback(async (messageData: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     if (!call) return;
 
+    const generateSafeId = () => {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+      return `msg-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const message: ChatMessage = {
       ...messageData,
-      id: crypto.randomUUID(),
+      id: generateSafeId(),
       timestamp: new Date(),
     };
 

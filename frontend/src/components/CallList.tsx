@@ -158,15 +158,22 @@ const CallList = ({
 
   useEffect(() => {
     const fetchRecordings = async () => {
-      const callData = await Promise.all(
-        callRecordings?.map((meeting) => meeting.queryRecordings()) ?? []
-      );
+      try {
+        const settledCalls = await Promise.allSettled(
+          callRecordings?.map((meeting) => meeting.queryRecordings()) ?? []
+        );
 
-      const recs = callData
-        .filter((call) => call.recordings.length > 0)
-        .flatMap((call) => call.recordings);
+        const recs: CallRecording[] = [];
+        for (const res of settledCalls) {
+          if (res.status === "fulfilled" && Array.isArray(res.value?.recordings)) {
+            recs.push(...res.value.recordings);
+          }
+        }
 
-      setRecordings(recs);
+        setRecordings(recs);
+      } catch (err) {
+        console.error("Failed to query recordings:", err);
+      }
     };
 
     if (type === "recordings") {
