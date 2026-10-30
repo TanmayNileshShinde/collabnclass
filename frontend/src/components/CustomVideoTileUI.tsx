@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   SfuModels,
   useParticipantViewContext,
@@ -69,187 +69,102 @@ export const ConnectionQualityBars = ({
 };
 
 /**
- * ActiveVideoRenderer
- * Resilient native HTML5 video renderer.
- * Binds MediaStream with explicit muted autoplay and ensures playback on Chromium.
- */
-const ActiveVideoRenderer: React.FC<{
-  stream: MediaStream;
-  isLocal: boolean;
-}> = ({ stream, isLocal }) => {
-  const videoRef = React.useRef<HTMLVideoElement | null>(null);
-
-  React.useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl || !stream) return;
-
-    if (videoEl.srcObject !== stream) {
-      videoEl.srcObject = stream;
-    }
-    videoEl.muted = true;
-    videoEl.defaultMuted = true;
-
-    const playVideo = () => {
-      if (videoEl.paused) {
-        videoEl.play().catch(() => {});
-      }
-    };
-
-    playVideo();
-    videoEl.addEventListener("loadedmetadata", playVideo);
-    videoEl.addEventListener("canplay", playVideo);
-    videoEl.addEventListener("loadeddata", playVideo);
-
-    return () => {
-      videoEl.removeEventListener("loadedmetadata", playVideo);
-      videoEl.removeEventListener("canplay", playVideo);
-      videoEl.removeEventListener("loadeddata", playVideo);
-    };
-  }, [stream]);
-
-  return (
-    <video
-      ref={videoRef}
-      autoPlay
-      playsInline
-      muted
-      className={cn(
-        "w-full h-full object-cover",
-        isLocal && "-scale-x-100"
-      )}
-    />
-  );
-};
-
-/**
  * CustomVideoPlaceholder
- * Displayed inside ParticipantView. If a video stream is active (SFU or local camera),
- * it renders the video element via ActiveVideoRenderer. Otherwise, it displays the cyberpunk avatar.
+ * Displayed inside ParticipantView when a video stream is disabled, paused, or loading.
+ * Strictly renders the stylized cyberpunk avatar and status badges, allowing Stream SDK's
+ * native HTML5 video element to manage camera video playback unimpeded without duplicate DOM competition.
  */
 export const CustomVideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
   participant,
   style,
   className,
 }) => {
-  const { user } = useUser();
   const [imageError, setImageError] = useState(false);
   const { raisedHands } = useClassroom();
   const isSpeaking = participant.isSpeaking;
   const isHandRaised = raisedHands.has(participant.userId);
   const displayName = participant.name || participant.userId || "Participant";
   const initials = getParticipantInitials(displayName);
-  const isLocal =
-    participant.isLocalParticipant || participant.userId === user?.id;
-
-  const { useCameraState } = useCallStateHooks();
-  const { status: cameraStatus, mediaStream: localMediaStream } = useCameraState();
-
-  // Determine active video stream: SFU stream or reactive local camera mediaStream
-  const activeStream =
-    participant.videoStream ||
-    (isLocal && cameraStatus === "enabled" ? localMediaStream : undefined);
-
-  // Ensure local tracks are unmuted if camera status is enabled
-  useEffect(() => {
-    if (isLocal && cameraStatus === "enabled" && localMediaStream) {
-      localMediaStream.getVideoTracks().forEach((track) => {
-        if (!track.enabled) track.enabled = true;
-      });
-    }
-  }, [isLocal, cameraStatus, localMediaStream]);
-
-  const hasLiveVideoTrack = Boolean(
-    activeStream &&
-      activeStream.getVideoTracks().length > 0 &&
-      activeStream.getVideoTracks().some((t) => t.readyState === "live" && t.enabled)
-  );
 
   return (
     <div
       style={style}
       className={cn(
-        "absolute inset-0 flex flex-col items-center justify-center select-none overflow-hidden",
-        !hasLiveVideoTrack && "bg-gradient-to-br from-[#020914] via-[#041324] to-[#020710]",
+        "absolute inset-0 flex flex-col items-center justify-center select-none overflow-hidden bg-gradient-to-br from-[#020914] via-[#041324] to-[#020710]",
         className
       )}
     >
-      {hasLiveVideoTrack && activeStream ? (
-        <ActiveVideoRenderer stream={activeStream} isLocal={isLocal} />
-      ) : (
-        <>
-          {/* Atmospheric Ambient Glow */}
-          <div
-            className={cn(
-              "absolute inset-0 transition-opacity duration-300 pointer-events-none",
-              isSpeaking
-                ? "opacity-60 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500/25 via-blue-600/10 to-transparent"
-                : isHandRaised
-                ? "opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/25 via-orange-600/10 to-transparent"
-                : "opacity-20 bg-[radial-gradient(circle_at_center,_rgba(0,180,255,0.15)_0%,_transparent_70%)]"
-            )}
-          />
+      {/* Atmospheric Ambient Glow */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-opacity duration-300 pointer-events-none",
+          isSpeaking
+            ? "opacity-60 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500/25 via-blue-600/10 to-transparent"
+            : isHandRaised
+            ? "opacity-50 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/25 via-orange-600/10 to-transparent"
+            : "opacity-20 bg-[radial-gradient(circle_at_center,_rgba(0,180,255,0.15)_0%,_transparent_70%)]"
+        )}
+      />
 
-          {/* Cyber Frame Grid Pattern */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, rgba(0,200,255,0.8) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,200,255,0.8) 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
-            }}
-          />
+      {/* Cyber Frame Grid Pattern */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(0,200,255,0.8) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,200,255,0.8) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
 
-          {/* Avatar Container with Active Speaker Ring or Hand Raised Ring */}
-          <div className="relative z-10 flex flex-col items-center px-4">
-            <div
-              className={cn(
-                "relative flex items-center justify-center rounded-3xl transition-all duration-300",
-                "w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32",
-                isSpeaking
-                  ? "ring-4 ring-cyan-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_35px_rgba(0,220,255,0.7)] scale-105"
-                  : isHandRaised
-                  ? "ring-4 ring-amber-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_30px_rgba(245,158,11,0.6)]"
-                  : "ring-2 ring-cyan-500/25 shadow-2xl"
-              )}
-            >
-              {participant.image && !imageError ? (
-                <img
-                  src={participant.image}
-                  alt={displayName}
-                  onError={() => setImageError(true)}
-                  className="w-full h-full rounded-3xl object-cover"
-                />
-              ) : (
-                <div className="w-full h-full rounded-3xl bg-gradient-to-tr from-blue-700 via-sky-600 to-cyan-500 flex items-center justify-center text-white text-2xl sm:text-3xl md:text-4xl font-bold tracking-wider font-syne shadow-inner">
-                  {initials}
-                </div>
-              )}
-
-              {/* Active audio ripple halo */}
-              {isSpeaking && (
-                <span className="absolute inset-0 rounded-3xl border-2 border-cyan-400 animate-ping opacity-25 pointer-events-none" />
-              )}
-
-              {/* Hand raised badge on avatar */}
-              {isHandRaised && (
-                <span className="absolute -top-2 -right-2 z-20 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-base shadow-[0_0_15px_rgba(245,158,11,0.85)] border-2 border-[#030a16] animate-bounce">
-                  ✋
-                </span>
-              )}
+      {/* Avatar Container with Active Speaker Ring or Hand Raised Ring */}
+      <div className="relative z-10 flex flex-col items-center px-4">
+        <div
+          className={cn(
+            "relative flex items-center justify-center rounded-3xl transition-all duration-300",
+            "w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32",
+            isSpeaking
+              ? "ring-4 ring-cyan-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_35px_rgba(0,220,255,0.7)] scale-105"
+              : isHandRaised
+              ? "ring-4 ring-amber-400 ring-offset-4 ring-offset-[#030a16] shadow-[0_0_30px_rgba(245,158,11,0.6)]"
+              : "ring-2 ring-cyan-500/25 shadow-2xl"
+          )}
+        >
+          {participant.image && !imageError ? (
+            <img
+              src={participant.image}
+              alt={displayName}
+              onError={() => setImageError(true)}
+              className="w-full h-full rounded-3xl object-cover"
+            />
+          ) : (
+            <div className="w-full h-full rounded-3xl bg-gradient-to-tr from-blue-700 via-sky-600 to-cyan-500 flex items-center justify-center text-white text-2xl sm:text-3xl md:text-4xl font-bold tracking-wider font-syne shadow-inner">
+              {initials}
             </div>
+          )}
 
-            {/* Hand Raised badge on avatar placeholder */}
-            {isHandRaised && (
-              <div className="flex items-center gap-1 mt-3 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
-                <span className="text-xs">✋</span>
-                <span className="text-[11px] font-bold text-amber-300 tracking-wide">
-                  Hand Raised
-                </span>
-              </div>
-            )}
+          {/* Active audio ripple halo */}
+          {isSpeaking && (
+            <span className="absolute inset-0 rounded-3xl border-2 border-cyan-400 animate-ping opacity-25 pointer-events-none" />
+          )}
+
+          {/* Hand raised badge on avatar */}
+          {isHandRaised && (
+            <span className="absolute -top-2 -right-2 z-20 w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-base shadow-[0_0_15px_rgba(245,158,11,0.85)] border-2 border-[#030a16] animate-bounce">
+              ✋
+            </span>
+          )}
+        </div>
+
+        {/* Hand Raised badge on avatar placeholder */}
+        {isHandRaised && (
+          <div className="flex items-center gap-1 mt-3 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.3)]">
+            <span className="text-xs">✋</span>
+            <span className="text-[11px] font-bold text-amber-300 tracking-wide">
+              Hand Raised
+            </span>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -125,17 +125,18 @@ export const NetworkDiagnosticsModal: React.FC<NetworkDiagnosticsModalProps> = (
     if (!call) return;
     try {
       setIsResyncing(true);
-      const videoStream = call.camera.state.mediaStream;
-      if (videoStream && videoStream.getVideoTracks().some((t) => t.readyState === "live")) {
-        await call.publishVideoStream(videoStream);
-      } else {
+      if (call.camera.state.status === "enabled") {
         await call.camera.disable();
+        await call.camera.enable();
+      } else {
         await call.camera.enable();
       }
 
-      const audioStream = call.microphone.state.mediaStream;
-      if (audioStream && audioStream.getAudioTracks().some((t) => t.readyState === "live")) {
-        await call.publishAudioStream(audioStream);
+      if (call.microphone.state.status === "enabled") {
+        await call.microphone.disable();
+        await call.microphone.enable();
+      } else {
+        await call.microphone.enable();
       }
 
       setResyncSuccess(true);
