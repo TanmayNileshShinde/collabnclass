@@ -59,8 +59,14 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
       hour: '2-digit', minute: '2-digit',
     });
 
-  const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase() || "U";
+  };
 
   const stillInMeeting = attendance.filter(r => !r.left_at).length;
 
