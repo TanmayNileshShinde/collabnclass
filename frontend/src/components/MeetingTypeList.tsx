@@ -131,7 +131,13 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         toast({ title: "Please select a date and time" });
         return;
       }
-      const id = crypto.randomUUID();
+      const generateSafeId = () => {
+        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+          return crypto.randomUUID();
+        }
+        return `room-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      };
+      const id = generateSafeId();
       const call = client.call("default", id);
       if (!call) throw new Error("Failed to create call object");
       const startsAt = isInstantMeeting ? new Date().toISOString() : values.dateTime.toISOString();
