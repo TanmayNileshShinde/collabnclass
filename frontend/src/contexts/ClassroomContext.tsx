@@ -97,11 +97,15 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     if (!call) return;
 
     const handleCustomEvent = (event: any) => {
-      if (!event || !event.type) return;
+      if (!event) return;
+      // Stream Video SDK delivers custom events with event.type === "custom" and the payload in event.custom
+      const payload = event.custom || event;
+      const eventType = payload.type || event.type;
+      const customData = payload.custom || payload;
+      if (!eventType) return;
 
-      if (event.type === "classroom-hand-raise" && event.custom) {
-        const { userId, userName, userImage, isRaised, raisedAt } =
-          event.custom;
+      if (eventType === "classroom-hand-raise") {
+        const { userId, userName, userImage, isRaised, raisedAt } = customData;
         if (!userId) return;
 
         setRaisedHands((prev) => {
@@ -127,16 +131,16 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
           }
           return next;
         });
-      } else if (event.type === "classroom-lower-all-hands") {
+      } else if (eventType === "classroom-lower-all-hands") {
         setRaisedHands(new Map());
-      } else if (event.type === "classroom-mute-all") {
+      } else if (eventType === "classroom-mute-all") {
         if (!isHost) {
           toast({
             title: "🔇 Microphones Muted",
             description: "The host has muted all participants.",
           });
         }
-      } else if (event.type === "classroom-request-state") {
+      } else if (eventType === "classroom-request-state") {
         // Sync active state to newcomer if we have a hand raised
         if (user && raisedHands.has(user.id)) {
           const myInfo = raisedHands.get(user.id)!;

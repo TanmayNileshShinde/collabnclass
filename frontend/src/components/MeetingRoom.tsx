@@ -468,11 +468,13 @@ const MeetingRoomContent = () => {
 
     const handleParticipantJoined = (event: any) => {
       const participant = event.participant;
-      if (participant && participant.userId && participant.name) {
+      const pUserId = participant?.userId || participant?.user?.id;
+      const pName = participant?.name || participant?.user?.name || pUserId || "Participant";
+      if (pUserId) {
         AttendanceService.recordJoin(
           call.id,
-          participant.userId,
-          participant.name
+          pUserId,
+          pName
         ).catch((error) => {
           console.error("Failed to record participant join:", error);
         });
