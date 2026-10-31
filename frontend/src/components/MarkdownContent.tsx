@@ -65,7 +65,7 @@ const CodeBlock = ({
         });
         if (isMounted) setHighlightedHtml(html);
       } catch {
-        // Fallback to plaintext if language is unsupported in Shiki bundle
+        // fallback language
         try {
           const html = await codeToHtml(code, {
             lang: "plaintext",
@@ -151,7 +151,7 @@ const CodeBlock = ({
 // Render inline markdown elements: bold, italic, inline code, links
 const renderInline = (text: string): React.ReactNode[] => {
   const elements: React.ReactNode[] = [];
-  // Regex matches: **bold**, *italic*, `code`, [text](url)
+  // markdown regex
   const regex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -224,7 +224,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
     return <span className="whitespace-pre-wrap">{content}</span>;
   }
 
-  // Parse blocks: code blocks vs text blocks
+  // parse blocks
   const codeBlockRegex = /```([a-zA-Z0-9_-]*)\r?\n([\s\S]*?)```/g;
   const blocks: Array<
     | { type: "code"; language: string; code: string }
@@ -269,7 +269,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
           );
         }
 
-        // Render text block: headings, lists, blockquotes, paragraphs
+        // text blocks
         const lines = block.text.split(/\r?\n/);
         const renderedLines: React.ReactNode[] = [];
 
@@ -282,7 +282,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
             continue;
           }
 
-          // Headers
+          // headers
           if (trimmed.startsWith("### ")) {
             renderedLines.push(
               <h3
@@ -312,7 +312,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
               </h1>
             );
           }
-          // Blockquotes
+          // blockquotes
           else if (trimmed.startsWith("> ")) {
             renderedLines.push(
               <blockquote
@@ -323,7 +323,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
               </blockquote>
             );
           }
-          // Unordered list items (- or *)
+          // unordered list
           else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
             renderedLines.push(
               <div
@@ -337,7 +337,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
               </div>
             );
           }
-          // Numbered list items (1. , 2. )
+          // ordered list
           else if (/^\d+\.\s/.test(trimmed)) {
             const numMatch = trimmed.match(/^(\d+)\.\s(.*)$/);
             if (numMatch) {
@@ -356,7 +356,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
               );
             }
           }
-          // Regular paragraph
+          // paragraph
           else {
             renderedLines.push(
               <p key={`p-${i}`} className="my-0.5">

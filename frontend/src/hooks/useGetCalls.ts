@@ -14,7 +14,7 @@ export const useGetCalls = () => {
     setIsLoading(true);
 
     try {
-      // Query meetings where user is creator or member
+      // query meetings
       const { calls: queriedCalls } = await client.queryCalls({
         sort: [{ field: 'starts_at', direction: -1 }],
         filter_conditions: {
@@ -38,7 +38,7 @@ export const useGetCalls = () => {
     loadCalls();
   }, [loadCalls]);
 
-  // Periodic polling every 30 seconds to keep live/upcoming status fresh
+  // poll status
   useEffect(() => {
     const interval = setInterval(() => {
       loadCalls();
@@ -65,13 +65,13 @@ export const useGetCalls = () => {
       const hasActiveSession =
         session && (session.participants?.length ?? 0) > 0;
 
-      // 1. Definitively ended call
+      // ended call
       if (endedAt) {
         ended.push(call);
         return;
       }
 
-      // 2. Active Session or within live class window (startsAt <= now < startsAt + 3h)
+      // active session
       if (
         hasActiveSession ||
         (startTime > 0 &&
@@ -82,13 +82,13 @@ export const useGetCalls = () => {
         return;
       }
 
-      // 3. Future scheduled call
+      // future call
       if (startTime > currentTime) {
         upcoming.push(call);
         return;
       }
 
-      // 4. Past the 3-hour window with no active session -> archive to ended
+      // expired call
       ended.push(call);
     });
 

@@ -28,7 +28,7 @@ const MeetingSideDock = ({
   const dominantSpeaker = useDominantSpeaker();
   const participants = useParticipants();
 
-  // Find active speaker if any
+  // active speaker
   const speakingParticipant =
     (dominantSpeaker?.isSpeaking ? dominantSpeaker : null) ||
     participants.find((p) => p.isSpeaking);

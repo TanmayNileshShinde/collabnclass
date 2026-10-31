@@ -59,7 +59,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         return;
       }
 
-      // 1. Check if user pasted a full meeting link (e.g. .../meeting/:id)
+      // link check
       const urlMatch = trimmed.match(/\/meeting\/([a-zA-Z0-9_\-]+)/);
       if (urlMatch && urlMatch[1]) {
         navigate(`/meeting/${urlMatch[1]}`);
@@ -67,7 +67,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         return;
       }
 
-      // 2. Check if user pasted a standard UUID
+      // uuid check
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(trimmed)) {
         navigate(`/meeting/${trimmed}`);
@@ -75,7 +75,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
         return;
       }
 
-      // 3. Otherwise treat as 8-character meeting code
+      // code check
       const normalizedCode = trimmed.replace(/[^A-Z0-9]/gi, "").toUpperCase();
       if (normalizedCode.length !== 8) {
         toast({

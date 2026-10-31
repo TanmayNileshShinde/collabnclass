@@ -132,7 +132,7 @@ const PersonalRoom = () => {
   const [isCopiedInvitation, setIsCopiedInvitation] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  // Live ticking clock
+  // live clock
   const now = new Date();
   const [time, setTime] = useState(
     now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })

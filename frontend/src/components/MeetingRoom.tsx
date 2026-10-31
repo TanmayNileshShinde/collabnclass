@@ -218,10 +218,10 @@ const MeetingRoomContent = () => {
   const isPersonalRoom = !!searchParams.get("personal");
   const navigate = useNavigate();
 
-  // Default to grid layout so single and multi-participant rooms are centered and spacious
+  // grid layout
   const [layout, setLayout] = useState<CallLayoutType>("grid");
 
-  // Unified Side Dock state
+  // dock state
   const [isDockOpen, setIsDockOpen] = useState(false);
   const [activeDockTab, setActiveDockTab] = useState<SideDockTab>("chat");
   const [showWhiteboard, setShowWhiteboard] = useState(false);
@@ -305,7 +305,7 @@ const MeetingRoomContent = () => {
 
   const hasInitializedMediaRef = useRef(false);
 
-  // Ensure local video & audio are active and published to SFU upon entering joined call
+  // init tracks
   useEffect(() => {
     if (!call || callingState !== CallingState.JOINED) return;
     if (hasInitializedMediaRef.current) return;
@@ -340,7 +340,7 @@ const MeetingRoomContent = () => {
     initJoinedMedia();
   }, [call, callingState]);
 
-  // Autoplay watchdog: Chromium pauses video elements on dynamic srcObject change unless explicitly played
+  // autoplay watchdog
   useEffect(() => {
     if (callingState !== CallingState.JOINED) return;
 
@@ -400,7 +400,7 @@ const MeetingRoomContent = () => {
     return () => clearInterval(id);
   }, []);
 
-  // Listen for host end-call broadcast
+  // end-call listener
   useEffect(() => {
     if (!call) return;
 
@@ -420,7 +420,7 @@ const MeetingRoomContent = () => {
     };
   }, [call]);
 
-  // Track attendance when user joins or leaves meeting
+  // track attendance
   useEffect(() => {
     if (!call || !user || callingState !== CallingState.JOINED) return;
 
@@ -462,7 +462,7 @@ const MeetingRoomContent = () => {
     };
   }, [call, user, callingState]);
 
-  // Track participant join/leave events
+  // participant events
   useEffect(() => {
     if (!call) return;
 

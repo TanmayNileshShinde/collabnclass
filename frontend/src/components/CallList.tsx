@@ -66,7 +66,7 @@ const CallList = ({
       case "upcoming": {
         if (currentFilter === "live") return liveCalls;
         if (currentFilter === "scheduled") return upcomingCalls;
-        // All: Live calls first, followed by scheduled
+        // sort calls
         return [...liveCalls, ...upcomingCalls];
       }
       default:
@@ -74,7 +74,7 @@ const CallList = ({
     }
   }, [type, endedCalls, recordings, currentFilter, liveCalls, upcomingCalls]);
 
-  // Apply search query filter
+  // search filter
   const calls = useMemo(() => {
     if (!searchQuery.trim()) return rawCalls;
     const q = searchQuery.toLowerCase().trim();

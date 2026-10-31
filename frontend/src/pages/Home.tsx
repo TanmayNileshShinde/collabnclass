@@ -249,12 +249,12 @@ const Home = () => {
   );
   const date = new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(now);
 
-  // Command bar quick join input
+  // command bar
   const [quickCode, setQuickCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [isCopiedPersonal, setIsCopiedPersonal] = useState(false);
 
-  // Live clock
+  // live clock
   useEffect(() => {
     const id = setInterval(() => {
       setTime(
@@ -264,7 +264,7 @@ const Home = () => {
     return () => clearInterval(id);
   }, []);
 
-  // Time-of-day greeting
+  // greeting
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -272,7 +272,7 @@ const Home = () => {
     return "Good evening";
   }, []);
 
-  // Personal meeting link
+  // meeting link
   const personalRoomLink = useMemo(() => {
     if (!user?.id) return "";
     const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
@@ -287,7 +287,7 @@ const Home = () => {
     setTimeout(() => setIsCopiedPersonal(false), 2500);
   };
 
-  // Direct Quick Join Handler
+  // quick join
   const handleQuickJoin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const rawInput = quickCode.trim();
@@ -306,7 +306,7 @@ const Home = () => {
 
     setIsJoining(true);
     try {
-      // 1. Full URL check
+      // url check
       const urlMatch = rawInput.match(/\/meeting\/([a-zA-Z0-9_\-]+)/);
       if (urlMatch && urlMatch[1]) {
         navigate(`/meeting/${urlMatch[1]}`);
@@ -314,7 +314,7 @@ const Home = () => {
         return;
       }
 
-      // 2. UUID check
+      // uuid check
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(rawInput)) {
         navigate(`/meeting/${rawInput}`);
@@ -322,7 +322,7 @@ const Home = () => {
         return;
       }
 
-      // 3. 8-digit meeting code check
+      // code check
       const normalizedCode = rawInput.replace(/[^A-Z0-9]/gi, "").toUpperCase();
       if (normalizedCode.length !== 8) {
         toast({
@@ -370,7 +370,7 @@ const Home = () => {
     }
   };
 
-  // Paste from clipboard helper
+  // paste helper
   const handlePasteClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();

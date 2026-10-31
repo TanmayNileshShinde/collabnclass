@@ -10,7 +10,7 @@ export interface AttendanceRecord {
 }
 
 class AttendanceService {
-  // Record when a user joins a meeting
+  // join record
   static async recordJoin(meetingId: string, userId: string, userName: string) {
     try {
       if (!isSupabaseConfigured) {
@@ -18,7 +18,7 @@ class AttendanceService {
         return null;
       }
 
-      // Check if user already has an active session for this meeting
+      // active session
       const { data: existingRecord, error: checkError } = await supabase
         .from('meeting_attendance')
         .select('*')
@@ -59,7 +59,7 @@ class AttendanceService {
     }
   }
 
-  // Record when a user leaves a meeting
+  // leave record
   static async recordLeave(meetingId: string, userId: string) {
     try {
       if (!isSupabaseConfigured) return null;
@@ -87,7 +87,7 @@ class AttendanceService {
     }
   }
 
-  // Record leave on tab closure / page unload with keepalive or beacon
+  // unload beacon
   static recordLeaveBeacon(meetingId: string, userId: string) {
     try {
       if (!isSupabaseConfigured) return false;
@@ -104,7 +104,7 @@ class AttendanceService {
         left_at: new Date().toISOString(),
       });
 
-      // 1. Try keepalive fetch (guaranteed by browser even after page unload)
+      // keepalive fetch
       if (typeof fetch === 'function') {
         fetch(endpoint, {
           method: 'PATCH',
@@ -120,7 +120,7 @@ class AttendanceService {
         return true;
       }
 
-      // 2. Fallback to navigator.sendBeacon
+      // sendBeacon fallback
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
         const blob = new Blob([payload], { type: 'application/json' });
         navigator.sendBeacon(endpoint, blob);
@@ -134,7 +134,7 @@ class AttendanceService {
     }
   }
 
-  // Get attendance records for a specific meeting
+  // meeting records
   static async getMeetingAttendance(meetingId: string) {
     try {
       if (!isSupabaseConfigured) return [];
@@ -157,7 +157,7 @@ class AttendanceService {
     }
   }
 
-  // Get all attendance records for a user
+  // user records
   static async getUserAttendance(userId: string) {
     try {
       if (!isSupabaseConfigured) return [];

@@ -75,7 +75,7 @@ const highlightCode = async (code: string, filePath: string): Promise<string> =>
       theme: 'github-dark',
     });
   } catch {
-    // Fallback to plaintext if the language isn't supported
+    // fallback language
     return await codeToHtml(code, {
       lang: 'plaintext',
       theme: 'github-dark',
@@ -254,7 +254,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
     [beurl, getToken]
   );
 
-  // Sync lightweight repo pointer across participants and lazily load contents
+  // sync pointer
   useEffect(() => {
     const imported = call?.state.custom?.importedRepo;
     if (!imported) return;
@@ -309,7 +309,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       setRepoInfo(info);
       setFileTree(contents);
 
-      // Store lightweight pointer in call custom data to prevent quota overflow
+      // store pointer
       await call?.update({
         custom: {
           ...call?.state.custom,
@@ -382,7 +382,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       if (!response.ok) throw new Error('Failed to fetch file content');
       const text = await response.text();
 
-      // Guard against gigantic files (>500KB) locking up the browser
+      // size guard
       if (text.length > 500000) {
         const truncated = text.substring(0, 500000) + '\n\n// --- File truncated for performance (exceeds 500KB) ---';
         const html = await highlightCode(truncated, item.path);
@@ -481,7 +481,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
     </div>
   ) : null;
 
-  // Embedded dock rendering
+  // dock view
   if (embedded) {
     return (
       <div className="flex flex-col h-full w-full min-h-0 bg-transparent overflow-hidden">
@@ -528,7 +528,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
     );
   }
 
-  // Standalone mode fallback
+  // standalone fallback
   if (!isHost) {
     return (
       <div className="flex flex-col h-[calc(100vh-86px)] w-[400px] bg-light-1 dark:bg-dark-1 border-l border-light-4 dark:border-dark-4">

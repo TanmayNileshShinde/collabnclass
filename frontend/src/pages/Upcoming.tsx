@@ -134,7 +134,7 @@ const Upcoming = () => {
     day: "numeric",
   }).format(now);
 
-  // Live ticking clock
+  // live clock
   useEffect(() => {
     const id = setInterval(() => {
       setTime(

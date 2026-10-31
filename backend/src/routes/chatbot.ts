@@ -62,13 +62,13 @@ router.post("/chatbot", async (req: Request, res: Response) => {
         }
       }
     } else if (clerkSecretKey) {
-      // If CLERK_SECRET_KEY is configured on server, require auth
+      // clerk check
       return res.status(401).json({
         error: "Authentication required to use AI Study Assistant.",
       });
     }
 
-    // Rate limit by verified userId or client IP
+    // apply limit
     const rateLimitKey = userId || req.ip || req.socket.remoteAddress || "anonymous";
     const rateCheck = checkRateLimit(rateLimitKey);
 
@@ -94,10 +94,10 @@ router.post("/chatbot", async (req: Request, res: Response) => {
       });
     }
 
-    // Build conversation context for Groq
+    // groq context
     let contextMessages: { role: "system" | "user" | "assistant"; content: string }[] = [];
 
-    // Add conversation history (last 5 messages)
+    // recent history
     if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
       contextMessages = conversationHistory.slice(-5).map((msg: any) => ({
         role: msg.role === "assistant" ? "assistant" : "user",
@@ -118,7 +118,7 @@ router.post("/chatbot", async (req: Request, res: Response) => {
 
     Be concise, friendly, and helpful. Keep responses under 150 words when possible.`;
 
-    // Call Groq API with valid versatile model
+    // groq api
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [

@@ -3,7 +3,7 @@ import CallList from "@/components/CallList";
 import { useGetCalls } from "@/hooks/useGetCalls";
 import { History, Users, Search, X, Clock, Calendar } from "lucide-react";
 
-// Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home & Upcoming)
+// svg waves
 const OceanWaves = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
     {/* Dark Theme Waves */}
@@ -60,7 +60,7 @@ const OceanWaves = () => (
   </div>
 );
 
-// Floating particle bubbles
+  // particle bubbles
 const Bubbles = () => {
   const bubbles = [
     { size: 5, left: "12%", delay: "0s", duration: "6s", bottom: "10%" },
@@ -91,7 +91,7 @@ const Bubbles = () => {
   );
 };
 
-// Scanlines overlay for cyber depth
+  // cyber scanlines
 const Scanlines = () => (
   <div
     className="absolute inset-0 pointer-events-none overflow-hidden transition-opacity duration-300 dark:opacity-[0.03] opacity-0"

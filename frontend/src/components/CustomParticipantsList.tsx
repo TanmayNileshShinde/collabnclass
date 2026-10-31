@@ -73,10 +73,7 @@ const CustomParticipantsList = ({
       : participants;
   }, [localParticipant, participants]);
 
-  // Sort participants intelligently:
-  // 1. Host / Instructor on top
-  // 2. Participants with ✋ Hands Raised (ordered by timestamp asc - first to raise is first)
-  // 3. Alphabetical or regular participants
+    // sort participants
   const sortedParticipants = useMemo(() => {
     const hostId =
       call?.state.createdBy?.id || call?.state.custom?.creatorId;

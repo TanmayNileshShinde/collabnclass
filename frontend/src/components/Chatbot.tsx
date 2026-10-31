@@ -79,7 +79,7 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom smoothly on message updates or loading state
+  // auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
@@ -309,7 +309,7 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
     return embeddedContent;
   }
 
-  // Floating Fallback Window
+  // floating window
   return (
     <div
       className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${

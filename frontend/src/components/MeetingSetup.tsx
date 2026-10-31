@@ -177,7 +177,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
 
-  // Live ticking clock
+  // live clock
   const now = new Date();
   const [time, setTime] = useState(
     now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
@@ -201,7 +201,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     throw new Error("useStreamCall must be used within a StreamCall component.");
   }
 
-  // Handle master "Join with mic & camera off" toggle
+  // media toggle
   useEffect(() => {
     if (isMicCamToggled) {
       call.camera.disable();
@@ -305,7 +305,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     );
   }
 
-  // Custom Viewport when Camera is Disabled
+  // camera disabled
   const CustomDisabledVideoPreview = () => (
     <div className="relative flex flex-col items-center justify-center w-full h-full p-4 text-center select-none dark:bg-[#030b17]/95 bg-slate-900/95 overflow-hidden">
       {/* Ambient Pulsing Radar Rings */}
@@ -353,7 +353,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     </div>
   );
 
-  // Custom Viewport when No Camera is Detected
+  // camera missing
   const CustomNoCameraPreview = () => (
     <div className="relative flex flex-col items-center justify-center w-full h-full p-4 text-center select-none dark:bg-[#030b17]/95 bg-slate-900/95">
       <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">

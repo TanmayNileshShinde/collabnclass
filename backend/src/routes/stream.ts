@@ -78,7 +78,7 @@ router.post("/token", verifyAuth, async (req: Request, res: Response) => {
     const expirationTime = Math.floor(Date.now() / 1000) + 3600;
     const issuedAt = Math.floor(Date.now() / 1000) - 60;
 
-    // Create token with admin role to allow all participants to update calls
+    // admin token
     const token = client.createToken(userId, expirationTime, issuedAt);
 
     res.json({ token });
@@ -108,11 +108,11 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
 
     const decodedRecordingId = decodeURIComponent(recordingId as string);
 
-    // Call Stream client delete recording if client is available
+    // client delete
     const client = getStreamClient();
     if (client) {
       try {
-        // Stream video recording deletion via client or REST API
+        // delete recording
         if (typeof (client as any).deleteRecording === "function") {
           await (client as any).deleteRecording(decodedRecordingId);
         } else if (typeof (client as any).video?.deleteRecording === "function") {

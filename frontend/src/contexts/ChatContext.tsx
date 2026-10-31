@@ -29,7 +29,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const storageKey = call?.id ? `meeting_chat_${call.id}` : null;
 
-  // 1. Initial Load: Restore cached messages for this meeting from localStorage
+  // restore cache
   useEffect(() => {
     if (!storageKey) return;
     try {
@@ -49,7 +49,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [storageKey]);
 
-  // 2. Fetch persisted messages from Supabase (if configured)
+  // fetch supabase
   useEffect(() => {
     if (!call?.id || !isSupabaseConfigured) return;
 
@@ -63,7 +63,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .order('created_at', { ascending: true });
 
         if (error) {
-          // Table might not exist yet, fallback to peer sync
+          // peer fallback
           return;
         }
 
@@ -103,7 +103,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [call?.id, storageKey]);
 
-  // 3. Listen to Stream custom events (real-time messages + history sync for late joiners)
+  // message listener
   useEffect(() => {
     if (!call) return;
 
@@ -112,7 +112,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const custom = event.custom;
       if (!custom) return;
 
-      // New chat message received
+      // receive message
       if (custom.type === "chat-message" && custom.message) {
         const msg = custom.message;
         const newMsg: ChatMessage = {
@@ -130,7 +130,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
       }
 
-      // A newly joined peer requested historical messages
+      // peer history
       if (custom.type === "chat-history-request") {
         if (custom.requesterId && custom.requesterId === user?.id) return;
         const currentMsgs = messagesRef.current;
@@ -146,7 +146,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // Received history response from an existing peer
+      // sync history
       if (custom.type === "chat-history-response") {
         if (custom.targetId && custom.targetId !== user?.id) return;
         if (Array.isArray(custom.messages) && custom.messages.length > 0) {
@@ -174,7 +174,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     (call as any).on("custom", handleEvent);
 
-    // Request chat history from peers already present in the call
+    // request history
     call.sendCustomEvent({
       type: "chat-history-request",
       requesterId: user?.id,
@@ -185,7 +185,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [call, user?.id, storageKey]);
 
-  // 4. Send Message Handler
+  // send message
   const sendMessage = useCallback(async (messageData: Omit<ChatMessage, 'id' | 'timestamp'>) => {
     if (!call) return;
 
@@ -203,7 +203,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     try {
-      // Broadcast to peers via Stream Call Custom Events
+      // broadcast message
       await call.sendCustomEvent({
         type: "chat-message",
         message: {
@@ -212,7 +212,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
-      // Optimistically append sender's own message to local state
+      // optimistic append
       setMessages((prev) => {
         const updated = [...prev, message];
         if (storageKey) {
@@ -221,7 +221,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return updated;
       });
 
-      // Persist to Supabase if available
+      // save supabase
       if (isSupabaseConfigured && call.id) {
         try {
           await supabase.from('meeting_messages').insert({
@@ -242,7 +242,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [call, storageKey]);
 
-  // 5. Clear Messages Handler
+  // clear messages
   const clearMessages = useCallback(() => {
     setMessages([]);
     if (storageKey) {

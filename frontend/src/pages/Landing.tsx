@@ -24,9 +24,7 @@ import {
   Send,
 } from "lucide-react";
 
-// ==========================================
-// DATA DEFINITIONS & CONSTANTS
-// ==========================================
+// constants
 
 const STATS = [
   { value: "< 45ms", label: "Ultra-Low Latency", sub: "WebRTC peer-to-peer mesh" },
@@ -167,9 +165,7 @@ const COMPARISON = [
   },
 ];
 
-// ==========================================
-// INTERACTIVE MOCK CLASSROOM COMPONENT
-// ==========================================
+// mock classroom
 
 function InteractiveClassroomPreview() {
   const [activeTab, setActiveTab] = useState<"code" | "board" | "ai" | "chat">("code");
@@ -183,7 +179,7 @@ function InteractiveClassroomPreview() {
     { id: "chat", label: "Team Chat", icon: MessageSquare },
   ];
 
-  // Auto-rotation every 5s unless hovered
+  // auto rotate
   useEffect(() => {
     if (isPaused) return;
     timerRef.current = setInterval(() => {
@@ -456,9 +452,7 @@ function InteractiveClassroomPreview() {
   );
 }
 
-// ==========================================
-// MAIN LANDING COMPONENT
-// ==========================================
+// landing component
 
 export default function CollabClassLanding() {
   const [scrolled, setScrolled] = useState(false);

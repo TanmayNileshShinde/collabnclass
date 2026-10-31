@@ -7,7 +7,7 @@ dotenv.config();
 
 const router = Router();
 
-// In-memory cache for GitHub API requests to protect against unauthenticated 60 req/hr rate limits
+// api cache
 interface CacheEntry {
   data: any;
   expiresAt: number;
@@ -36,14 +36,14 @@ const setCache = (key: string, data: any): void => {
   githubCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
 };
 
-// Get GitHub token from environment (optional but recommended for higher rate limits)
+// github token
 const getGitHubToken = () => {
   return (
     process.env.GITHUB_TOKEN || process.env.GITHUB_PERSONAL_ACCESS_TOKEN || ""
   );
 };
 
-// Log token status on startup (without exposing the actual token)
+// token status
 const GITHUB_TOKEN = getGitHubToken();
 if (GITHUB_TOKEN) {
   console.log(
@@ -55,7 +55,7 @@ if (GITHUB_TOKEN) {
   );
 }
 
-// Format error handling with 403 rate limit detection
+// handle rate-limit
 const handleGitHubError = (res: any, error: any, defaultMsg: string) => {
   console.error(defaultMsg, error);
   const statusCode = error.response?.status || 500;
@@ -77,7 +77,7 @@ const handleGitHubError = (res: any, error: any, defaultMsg: string) => {
   });
 };
 
-// middleware to verify clerk auth
+// clerk middleware
 const verifyAuth = async (req: any, res: any, next: any) => {
   try {
     const authHeader = req.headers.authorization;
@@ -111,7 +111,7 @@ const verifyAuth = async (req: any, res: any, next: any) => {
   }
 };
 
-// Get repository contents (with wildcard path)
+// repo contents
 router.get(
   "/repo/:owner/:repo/contents/*",
   verifyAuth,
@@ -146,7 +146,7 @@ router.get(
   },
 );
 
-// Get repository root contents
+// root contents
 router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res: any) => {
   try {
     const { owner, repo } = req.params;
@@ -176,7 +176,7 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res: any)
   }
 });
 
-// Get repository information (this must come after the contents route)
+// repo info
 router.get("/repo/:owner/:repo", verifyAuth, async (req: any, res: any) => {
   try {
     const { owner, repo } = req.params;

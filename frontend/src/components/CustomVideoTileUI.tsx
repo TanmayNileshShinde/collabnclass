@@ -190,7 +190,7 @@ export const CustomParticipantViewUI = () => {
     call?.state.custom?.creatorId === participant.userId;
   const isPinned = Boolean(participant.pin);
 
-  // Audio track status: reactive microphone state for local participant, published SFU track for remote
+  // track status
   const isMuted = isLocal
     ? Boolean(isLocalMicMuted)
     : !participant.publishedTracks.includes(SfuModels.TrackType.AUDIO) &&

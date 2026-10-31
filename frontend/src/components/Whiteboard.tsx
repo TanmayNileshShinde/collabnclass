@@ -34,7 +34,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRemoteUpdateRef = useRef(false);
 
-  // Dynamic storage key scoped to current meeting room
+  // room key
   const storageKey = call?.id
     ? `${STORAGE_KEY_PREFIX}-${call.id}`
     : STORAGE_KEY_PREFIX;
@@ -65,10 +65,10 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     }
   }, [storageKey]);
 
-  // Handle local drawing changes and broadcast to all peers in call
+  // broadcast changes
   const handleChange = useCallback(
     (elements: any, appState: any) => {
-      // If this change was triggered by receiving remote elements, skip re-broadcasting
+      // ignore echo
       if (isRemoteUpdateRef.current) {
         isRemoteUpdateRef.current = false;
         return;
@@ -76,7 +76,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
       saveToStorage(elements, appState);
 
-      // Debounce network broadcasts to avoid flooding WebRTC channels during drawing strokes
+      // debounce sync
       if (call) {
         if (syncTimeoutRef.current) {
           clearTimeout(syncTimeoutRef.current);
@@ -102,7 +102,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     [call, user, saveToStorage],
   );
 
-  // Listen to remote Stream custom events
+  // stream events
   useEffect(() => {
     if (!call) return;
 
@@ -111,7 +111,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       const customData = event.custom;
       if (!customData) return;
 
-      // 1. Remote peer updated the board
+      // peer update
       if (customData.type === "whiteboard-elements-update") {
         if (customData.senderId && customData.senderId === user?.id) return; // Ignore own echoes
 
@@ -126,7 +126,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         }
       }
 
-      // 2. Newly joined peer requested initial whiteboard state
+      // state request
       if (customData.type === "whiteboard-request-state") {
         if (customData.requesterId && customData.requesterId === user?.id) return;
         if (!excalidrawAPI) return;
@@ -144,7 +144,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         }
       }
 
-      // 3. Response to our initial state request
+      // state response
       if (customData.type === "whiteboard-elements-response") {
         if (customData.targetId && customData.targetId !== user?.id) return;
         if (excalidrawAPI && Array.isArray(customData.elements)) {
@@ -158,7 +158,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         }
       }
 
-      // 4. Whiteboard cleared by peer
+      // clear event
       if (customData.type === "whiteboard-clear") {
         if (customData.senderId && customData.senderId === user?.id) return;
         if (excalidrawAPI) {
@@ -179,7 +179,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
     (call as any).on("custom", handleCustomEvent);
 
-    // Upon opening the whiteboard, request existing canvas state from active peers
+    // fetch canvas
     call.sendCustomEvent({
       type: "whiteboard-request-state",
       requesterId: user?.id,
@@ -194,7 +194,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     };
   }, [call, user?.id, excalidrawAPI, saveToStorage, storageKey, toast]);
 
-  // Export as PNG (P5-3)
+  // export png
   const handleExportPNG = useCallback(async () => {
     if (!excalidrawAPI) return;
     try {
@@ -233,7 +233,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     }
   }, [excalidrawAPI, toast]);
 
-  // Export as SVG (P5-3)
+  // export svg
   const handleExportSVG = useCallback(async () => {
     if (!excalidrawAPI) return;
     try {
@@ -273,7 +273,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     }
   }, [excalidrawAPI, toast]);
 
-  // Export as JSON backup
+  // export json
   const handleExportJSON = useCallback(() => {
     if (!excalidrawAPI) return;
 
@@ -291,7 +291,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     toast({ title: "Whiteboard exported as JSON!" });
   }, [excalidrawAPI, toast]);
 
-  // Import JSON backup
+  // import json
   const handleImportJSON = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
@@ -318,7 +318,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
             });
             saveToStorage(elements, appState);
 
-            // Broadcast imported canvas to all peers in call
+            // broadcast import
             if (call) {
               call.sendCustomEvent({
                 type: "whiteboard-elements-update",
@@ -347,7 +347,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     input.click();
   }, [excalidrawAPI, saveToStorage, call, user, toast]);
 
-  // Clear whiteboard for all participants
+  // clear whiteboard
   const handleClear = useCallback(() => {
     if (!excalidrawAPI) return;
 

@@ -48,7 +48,7 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // Get display name with better fallbacks
+    // display name
     const getUserDisplayName = () => {
       if (user?.firstName && user?.lastName) {
         return `${user.firstName} ${user.lastName}`;

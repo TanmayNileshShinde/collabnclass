@@ -58,7 +58,7 @@ const playHandRaiseChime = () => {
     osc.start();
     osc.stop(ctx.currentTime + 0.35);
   } catch {
-    // Autoplay restrictions or headless environment
+    // autoplay fallback
   }
 };
 
@@ -73,7 +73,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     new Map()
   );
 
-  // Determine if the local user is the Host / Instructor
+  // host check
   const isHost = useMemo(() => {
     if (!call || !user) return false;
     const callCreatorId = call.state.createdBy?.id;
@@ -92,13 +92,13 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     );
   }, [raisedHands]);
 
-  // Listen to custom Stream events for Hand Raises and Host Mute actions
+  // stream events
   useEffect(() => {
     if (!call) return;
 
     const handleCustomEvent = (event: any) => {
       if (!event) return;
-      // Stream Video SDK delivers custom events with event.type === "custom" and the payload in event.custom
+      // custom event
       const payload = event.custom || event;
       const eventType = payload.type || event.type;
       const customData = payload.custom || payload;
@@ -118,7 +118,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
               raisedAt: raisedAt || Date.now(),
             });
 
-            // If another user raised their hand and local user is host, notify
+            // hand notification
             if (userId !== user?.id) {
               playHandRaiseChime();
               toast({
@@ -141,7 +141,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
           });
         }
       } else if (eventType === "classroom-request-state") {
-        // Sync active state to newcomer if we have a hand raised
+        // sync state
         if (user && raisedHands.has(user.id)) {
           const myInfo = raisedHands.get(user.id)!;
           call
@@ -160,7 +160,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
       }
     };
 
-    // Clean up hands when participant leaves
+    // prune hands
     const handleParticipantLeft = (event: any) => {
       const leftId = event?.participant?.userId;
       if (leftId) {
@@ -178,7 +178,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     call.on("custom", handleCustomEvent);
     call.on("participantLeft", handleParticipantLeft);
 
-    // Request active hand-raise state upon joining
+    // request hands
     if (user?.id) {
       call
         .sendCustomEvent({
@@ -194,7 +194,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     };
   }, [call, isHost, user, raisedHands, toast]);
 
-  // Toggle local hand raise
+  // toggle hand
   const toggleHandRaise = useCallback(async () => {
     if (!call || !user) return;
     const nextState = !isHandRaised;
@@ -246,7 +246,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [call, user, isHandRaised, toast]);
 
-  // Lower an individual hand (by owner or host)
+  // lower hand
   const lowerHand = useCallback(
     async (targetUserId: string) => {
       if (!call) return;
@@ -273,7 +273,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     [call, raisedHands]
   );
 
-  // Lower all raised hands (host only)
+  // lower all
   const lowerAllHands = useCallback(async () => {
     if (!call) return;
     try {
@@ -291,7 +291,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [call, toast]);
 
-  // Mute all other participants (host only)
+  // mute all
   const muteAll = useCallback(async () => {
     if (!call) return;
     try {
@@ -323,7 +323,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [call, user, toast]);
 
-  // Mute a specific participant (host only)
+  // mute user
   const muteParticipant = useCallback(
     async (targetUserId: string) => {
       if (!call) return;
@@ -369,7 +369,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
 export const useClassroom = (): ClassroomContextType => {
   const context = useContext(ClassroomContext);
   if (!context) {
-    // Safe fallback if used outside ClassroomProvider
+    // context fallback
     return {
       raisedHands: new Map(),
       raisedHandsList: [],

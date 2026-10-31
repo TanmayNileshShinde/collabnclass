@@ -51,12 +51,12 @@ export const NetworkDiagnosticsModal: React.FC<NetworkDiagnosticsModalProps> = (
 
   const localParticipant = useLocalParticipant();
 
-  // Audio level visualizer state
+  // audio visualizer
   const [audioLevel, setAudioLevel] = useState(0);
   const [isResyncing, setIsResyncing] = useState(false);
   const [resyncSuccess, setResyncSuccess] = useState(false);
 
-  // Monitor live audio input volume via Web Audio API if mic is unmuted
+  // monitor audio
   useEffect(() => {
     if (!isOpen || isMicMuted || !micStream) {
       setAudioLevel(0);
