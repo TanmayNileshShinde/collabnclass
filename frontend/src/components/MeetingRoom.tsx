@@ -46,6 +46,8 @@ import {
   VideoOff,
   ChevronUp,
   Check,
+  Keyboard,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -226,6 +228,7 @@ const MeetingRoomContent = () => {
   const [activeDockTab, setActiveDockTab] = useState<SideDockTab>("chat");
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
   const {
     useCallCallingState,
@@ -549,6 +552,72 @@ const MeetingRoomContent = () => {
       toast({ title: "Meeting Link Copied", description: "URL ready to share." });
     }
   };
+
+
+  // Global In-Meeting Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("[contenteditable='true']") ||
+          target.closest("input") ||
+          target.closest("textarea"))
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setShowShortcutsModal(false);
+        setIsDiagnosticsOpen(false);
+        if (showWhiteboard) setShowWhiteboard(false);
+        if (isDockOpen) setIsDockOpen(false);
+        return;
+      }
+
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const key = e.key.toLowerCase();
+      if (key === "m") {
+        e.preventDefault();
+        handleToggleMic();
+      } else if (key === "v") {
+        e.preventDefault();
+        handleToggleCamera();
+      } else if (key === "h") {
+        e.preventDefault();
+        toggleHandRaise();
+      } else if (key === "b") {
+        e.preventDefault();
+        setShowWhiteboard((prev) => !prev);
+      } else if (key === "c") {
+        e.preventDefault();
+        handleToggleDock("chat");
+      } else if (key === "p") {
+        e.preventDefault();
+        handleToggleDock("participants");
+      } else if (key === "d") {
+        e.preventDefault();
+        setIsDiagnosticsOpen((prev) => !prev);
+      } else if (e.key === "?" || (e.shiftKey && key === "/")) {
+        e.preventDefault();
+        setShowShortcutsModal((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    handleToggleMic,
+    handleToggleCamera,
+    toggleHandRaise,
+    handleToggleDock,
+    showWhiteboard,
+    isDockOpen,
+  ]);
 
   const CallLayout = () => {
     switch (layout) {
@@ -903,6 +972,65 @@ const MeetingRoomContent = () => {
         onClose={() => setIsDiagnosticsOpen(false)}
       />
 
+      {/* Keyboard Shortcuts Modal */}
+      {showShortcutsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[rgba(0,180,255,0.28)] bg-[#040e1c]/95 p-6 text-white shadow-[0_0_50px_rgba(0,180,255,0.2)]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
+                  <Keyboard size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white font-syne">Keyboard Shortcuts</h3>
+                  <p className="text-[11px] text-neutral-400">Quick in-call keyboard controls</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowShortcutsModal(false)}
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2 text-xs">
+              {[
+                { key: "M", desc: "Toggle Microphone Mute" },
+                { key: "V", desc: "Toggle Camera On / Off" },
+                { key: "H", desc: "Raise / Lower Hand ✋" },
+                { key: "B", desc: "Toggle Whiteboard Canvas 🎨" },
+                { key: "C", desc: "Toggle In-Meeting Chat 💬" },
+                { key: "P", desc: "Toggle Participants Drawer 👥" },
+                { key: "D", desc: "Stage & Hardware Diagnostics 📡" },
+                { key: "?", desc: "Open Shortcuts Guide" },
+                { key: "Esc", desc: "Close Modals & Drawers" },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-white/[0.03] border border-white/5"
+                >
+                  <span className="text-neutral-300">{item.desc}</span>
+                  <kbd className="px-2 py-0.5 rounded-lg bg-black/60 border border-cyan-500/30 text-cyan-300 font-mono text-[11px] font-bold shadow-sm">
+                    {item.key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => setShowShortcutsModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-semibold border border-cyan-500/30 transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* ========================================================
           UNIFIED BOTTOM COCKPIT DOCK (Single Sleek Bar, Industry-Standard Groups)
       ======================================================== */}
@@ -1231,7 +1359,17 @@ const MeetingRoomContent = () => {
             </DropdownMenu>
 
             <CallStatsButton />
+
             <RecordCallButton />
+
+            {/* Keyboard Shortcuts Trigger Button */}
+            <button
+              onClick={() => setShowShortcutsModal(true)}
+              className="cursor-pointer rounded-xl bg-[#0e1e33] p-2 hover:bg-[#152c4a] text-neutral-300 hover:text-cyan-300 transition-colors border border-white/10 shrink-0 shadow-sm"
+              title="Keyboard Shortcuts (?)"
+            >
+              <Keyboard size={16} />
+            </button>
           </div>
 
           {/* Divider */}

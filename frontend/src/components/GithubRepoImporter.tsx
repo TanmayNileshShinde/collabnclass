@@ -206,7 +206,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
   const isHost = call?.state.createdBy?.id === userId;
 
   const parseGitHubUrl = (url: string) => {
-    const match = url.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/);
+    const match = url.match(/github\.com\/([^/]+)\/([^/?#]+)/);
     if (match) return { owner: match[1], repo: match[2] };
     return null;
   };

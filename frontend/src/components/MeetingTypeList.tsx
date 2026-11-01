@@ -34,7 +34,7 @@ interface MeetingTypeListProps {
   onScheduleClick?: () => void;
 }
 
-const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
+const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
   const navigate = useNavigate();
   const [meetingState, setMeetingState] = useState<
     "isScheduleMeeting" | "isJoiningMeeting" | "isInstantMeeting" | undefined
@@ -60,7 +60,7 @@ const MeetingTypeList = ({}: MeetingTypeListProps = {}) => {
       }
 
       // link check
-      const urlMatch = trimmed.match(/\/meeting\/([a-zA-Z0-9_\-]+)/);
+      const urlMatch = trimmed.match(/\/meeting\/([a-zA-Z0-9_-]+)/);
       if (urlMatch && urlMatch[1]) {
         navigate(`/meeting/${urlMatch[1]}`);
         toast({ title: "Joining classroom..." });
