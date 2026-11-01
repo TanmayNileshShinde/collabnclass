@@ -307,7 +307,7 @@ const Home = () => {
     setIsJoining(true);
     try {
       // url check
-      const urlMatch = rawInput.match(/\/meeting\/([a-zA-Z0-9_\-]+)/);
+      const urlMatch = rawInput.match(/\/meeting\/([a-zA-Z0-9_-]+)/);
       if (urlMatch && urlMatch[1]) {
         navigate(`/meeting/${urlMatch[1]}`);
         toast({ title: "Connecting to classroom..." });

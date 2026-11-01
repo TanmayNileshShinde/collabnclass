@@ -23,9 +23,11 @@ import {
   Camera,
   Play,
   SlidersHorizontal,
+  Activity,
   X,
 } from "lucide-react";
 
+import NetworkDiagnosticsModal from "./NetworkDiagnosticsModal";
 import Alert from "./Alert";
 import { useToast } from "./ui/use-toast";
 import { formatMeetingCode } from "@/lib/meetingUtils";
@@ -165,6 +167,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     devices: micDevices,
     selectedDevice: selectedMicrophone,
     isMute: isMicMuted,
+    mediaStream: micStream,
   } = useMicrophoneState();
 
   const {
@@ -175,6 +178,8 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
   const [isJoining, setIsJoining] = useState(false);
   const [isMicCamToggled, setIsMicCamToggled] = useState(false);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
 
   // live clock
@@ -196,6 +201,57 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Live mic audio level visualizer
+  useEffect(() => {
+    if (isMicMuted || !micStream) {
+      setAudioLevel(0);
+      return;
+    }
+
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let source: MediaStreamAudioSourceNode | null = null;
+    let animationFrameId: number;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      audioContext = new AudioCtx();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 64;
+      analyser.smoothingTimeConstant = 0.5;
+
+      source = audioContext.createMediaStreamSource(micStream);
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const checkVolume = () => {
+        if (!analyser) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        const normalized = Math.min(100, Math.round((avg / 128) * 100));
+        setAudioLevel(normalized);
+        animationFrameId = requestAnimationFrame(checkVolume);
+      };
+
+      checkVolume();
+    } catch (err) {
+      console.warn("Audio meter setup skipped:", err);
+    }
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      if (source) source.disconnect();
+      if (audioContext && audioContext.state !== "closed") {
+        audioContext.close().catch(() => {});
+      }
+    };
+  }, [isMicMuted, micStream]);
 
   if (!call) {
     throw new Error("useStreamCall must be used within a StreamCall component.");
@@ -550,6 +606,13 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                 >
                   <Settings2 size={15} />
                 </button>
+                <button
+                  onClick={() => setIsDiagnosticsOpen(true)}
+                  className="p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-neutral-300 hover:text-cyan-300 border border-white/20 backdrop-blur-xl transition-all active:scale-95 shadow-lg"
+                  title="Test Stage Telemetry & Hardware Diagnostics"
+                >
+                  <Activity size={15} />
+                </button>
               </div>
 
               {/* In-Chamber Device Configuration Modal Overlay */}
@@ -615,6 +678,27 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                       </select>
                     </div>
 
+                      {/* Live Mic Audio Level Meter */}
+                      <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-black/40 border border-white/10 mt-1">
+                        <span className="text-[10px] text-neutral-400 font-mono shrink-0">Mic Level:</span>
+                        <div className="flex-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden relative">
+                          <div
+                            className={cn(
+                              "h-full transition-all duration-75 rounded-full",
+                              isMicMuted
+                                ? "bg-rose-500/50 w-0"
+                                : audioLevel > 60
+                                ? "bg-gradient-to-r from-emerald-400 to-amber-400"
+                                : "bg-gradient-to-r from-cyan-400 to-emerald-400"
+                            )}
+                            style={{ width: `${isMicMuted ? 0 : audioLevel}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-mono text-cyan-300 shrink-0 w-8 text-right">
+                          {isMicMuted ? "MUTED" : `${audioLevel}%`}
+                        </span>
+                      </div>
+
                     {/* Speaker Selector */}
                     <div className="flex flex-col gap-0.5">
                       <label className="text-[10px] font-semibold text-neutral-300 flex items-center gap-1">
@@ -644,6 +728,16 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                     className="mt-1 w-full py-1 rounded-lg text-[11px] font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 transition-all"
                   >
                     Done
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDeviceModal(false);
+                      setIsDiagnosticsOpen(true);
+                    }}
+                    className="mt-1 w-full py-1 rounded-lg text-[11px] font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/25 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Activity size={12} />
+                    Full Network & Audio Diagnostics
                   </button>
                 </div>
               )}
@@ -782,6 +876,11 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
 
         </div>
       </main>
+
+      <NetworkDiagnosticsModal
+        isOpen={isDiagnosticsOpen}
+        onClose={() => setIsDiagnosticsOpen(false)}
+      />
     </div>
   );
 };

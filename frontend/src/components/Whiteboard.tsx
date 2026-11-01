@@ -192,7 +192,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         clearTimeout(syncTimeoutRef.current);
       }
     };
-  }, [call, user?.id, excalidrawAPI, saveToStorage, storageKey, toast]);
+  }, [call, user?.id, user?.fullName, user?.firstName, excalidrawAPI, saveToStorage, storageKey, toast]);
 
   // export png
   const handleExportPNG = useCallback(async () => {
