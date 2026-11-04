@@ -1,4 +1,5 @@
 import { useAuth } from "@clerk/clerk-react";
+import { getBackendUrl } from "../lib/api";
 import { useState, useRef, useEffect } from "react";
 import {
   Send,
@@ -114,7 +115,7 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
     try {
       const token = await getToken();
       const response = await fetch(
-        `${import.meta.env.VITE_BE_URL}/api/chatbot`,
+        `${getBackendUrl()}/api/chatbot`,
         {
           method: "POST",
           headers: {

@@ -1,5 +1,5 @@
 {
-  "name": "yoom-frontend",
+  "name": "collabclass-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,7 +7,8 @@
     "dev": "vite --mode development",
     "build": "tsc && vite build --mode production",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "tsc --noEmit"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.0.0",
