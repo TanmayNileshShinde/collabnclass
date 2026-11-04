@@ -1,6 +1,6 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { verifyToken } from "@clerk/clerk-sdk-node";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -9,14 +9,14 @@ const router = Router();
 
 // api cache
 interface CacheEntry {
-  data: any;
+  data: unknown;
   expiresAt: number;
 }
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache TTL
 const githubCache = new Map<string, CacheEntry>();
 
-const getCached = (key: string): any | null => {
+const getCached = (key: string): unknown | null => {
   const entry = githubCache.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
@@ -26,7 +26,7 @@ const getCached = (key: string): any | null => {
   return entry.data;
 };
 
-const setCache = (key: string, data: any): void => {
+const setCache = (key: string, data: unknown): void => {
   if (githubCache.size > 1000) {
     const now = Date.now();
     for (const [k, v] of githubCache.entries()) {
@@ -37,7 +37,7 @@ const setCache = (key: string, data: any): void => {
 };
 
 // github token
-const getGitHubToken = () => {
+const getGitHubToken = (): string => {
   return (
     process.env.GITHUB_TOKEN || process.env.GITHUB_PERSONAL_ACCESS_TOKEN || ""
   );
@@ -56,29 +56,30 @@ if (GITHUB_TOKEN) {
 }
 
 // handle rate-limit
-const handleGitHubError = (res: any, error: any, defaultMsg: string) => {
+const handleGitHubError = (res: Response, error: unknown, defaultMsg: string) => {
   console.error(defaultMsg, error);
-  const statusCode = error.response?.status || 500;
+  const axiosErr = error as AxiosError<{ message?: string }>;
+  const statusCode = axiosErr.response?.status || 500;
   const isRateLimit =
     statusCode === 403 &&
-    (error.response?.headers?.["x-ratelimit-remaining"] === "0" ||
-      (typeof error.response?.data?.message === "string" &&
-        error.response.data.message.toLowerCase().includes("rate limit")));
+    (axiosErr.response?.headers?.["x-ratelimit-remaining"] === "0" ||
+      (typeof axiosErr.response?.data?.message === "string" &&
+        axiosErr.response.data.message.toLowerCase().includes("rate limit")));
 
   const errorMessage = isRateLimit
     ? "GitHub API rate limit exceeded (60 requests/hr unauthenticated limit). Cached entries will continue to serve. Please wait a few moments or configure GITHUB_TOKEN in backend environment variables."
-    : error.response?.data?.message || error.message || defaultMsg;
+    : axiosErr.response?.data?.message || (axiosErr instanceof Error ? axiosErr.message : defaultMsg);
 
   res.status(statusCode).json({
     error: errorMessage,
     isRateLimit,
-    retryAfter: error.response?.headers?.["x-ratelimit-reset"],
-    details: error.response?.data || error.message,
+    retryAfter: axiosErr.response?.headers?.["x-ratelimit-reset"],
+    details: axiosErr.response?.data || (axiosErr instanceof Error ? axiosErr.message : defaultMsg),
   });
 };
 
 // clerk middleware
-const verifyAuth = async (req: any, res: any, next: any) => {
+const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -115,7 +116,7 @@ const verifyAuth = async (req: any, res: any, next: any) => {
 router.get(
   "/repo/:owner/:repo/contents/*",
   verifyAuth,
-  async (req: any, res: any) => {
+  async (req: Request, res: Response) => {
     try {
       const { owner, repo } = req.params;
       const path = req.params[0] || ""; // Get the rest of the path
@@ -140,14 +141,14 @@ router.get(
       const response = await axios.get(githubApiUrl, { headers });
       setCache(cacheKey, response.data);
       res.json(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleGitHubError(res, error, "Failed to fetch repository contents");
     }
   },
 );
 
 // root contents
-router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res: any) => {
+router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
     const cacheKey = `contents:${owner}:${repo}:root`;
@@ -171,13 +172,13 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: any, res: any)
     const response = await axios.get(githubApiUrl, { headers });
     setCache(cacheKey, response.data);
     res.json(response.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleGitHubError(res, error, "Failed to fetch repository root contents");
   }
 });
 
 // repo info
-router.get("/repo/:owner/:repo", verifyAuth, async (req: any, res: any) => {
+router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
     const cacheKey = `info:${owner}:${repo}`;
@@ -201,7 +202,7 @@ router.get("/repo/:owner/:repo", verifyAuth, async (req: any, res: any) => {
     const response = await axios.get(githubApiUrl, { headers });
     setCache(cacheKey, response.data);
     res.json(response.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleGitHubError(res, error, "Failed to fetch repository information");
   }
 });

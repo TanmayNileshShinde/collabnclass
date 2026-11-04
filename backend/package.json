@@ -1,17 +1,17 @@
 {
   "name": "collabclass",
   "version": "1.0.0",
-  "description": "Express backend for YOOM video calling app",
+  "description": "Express TypeScript backend for CollabClass virtual classroom platform",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "tsc --noEmit"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
     "@stream-io/node-sdk": "^0.1.13",
-    "@types/axios": "^0.9.36",
     "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
