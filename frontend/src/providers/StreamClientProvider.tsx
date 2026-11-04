@@ -2,10 +2,11 @@ import { ReactNode, useEffect, useState } from "react";
 import { StreamVideoClient, StreamVideo } from "@stream-io/video-react-sdk";
 import { useUser, useAuth } from "@clerk/clerk-react";
 
-import Loader from "../components/Loader";
+import Loader from '../components/Loader';
+import { getBackendUrl } from '../lib/api';
 
 const API_KEY = import.meta.env.VITE_STREAM_API_KEY;
-const beurl = import.meta.env.VITE_BE_URL;
+const beurl = getBackendUrl();
 const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
   const { user, isLoaded } = useUser();

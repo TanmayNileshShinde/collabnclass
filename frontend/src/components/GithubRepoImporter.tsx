@@ -5,6 +5,7 @@ import { Github, X, Folder, File, ChevronRight, ChevronDown, Link, Loader2, Down
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
+import { getBackendUrl } from '../lib/api';
 import { codeToHtml } from 'shiki';
 
 interface GitHubFileItem {
@@ -191,7 +192,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
   const { userId, getToken } = useAuth();
   const call = useCall();
   const { toast } = useToast();
-  const beurl = import.meta.env.VITE_BE_URL;
+  const beurl = getBackendUrl();
   const [repoUrl, setRepoUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [repoInfo, setRepoInfo] = useState<any>(null);

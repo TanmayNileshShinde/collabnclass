@@ -6,7 +6,8 @@ import { useAuth } from "@clerk/clerk-react";
 import Loader from "./Loader";
 import { useGetCalls } from "@/hooks/useGetCalls";
 import MeetingCard from "./MeetingCard";
-import { useToast } from "./ui/use-toast";
+import { useToast } from './ui/use-toast';
+import { getBackendUrl } from '../lib/api';
 import AttendanceModal from "./AttendanceModal";
 import { Radio, Calendar, Sparkles, CalendarX, Plus, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -116,7 +117,7 @@ const CallList = ({
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_BE_URL || ""}/api/stream/recordings/${encodeURIComponent(
+        `${getBackendUrl()}/api/stream/recordings/${encodeURIComponent(
           recordingId
         )}`,
         {
