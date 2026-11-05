@@ -6,7 +6,7 @@ import Loader from '../components/Loader';
 import { getBackendUrl } from '../lib/api';
 
 const API_KEY = import.meta.env.VITE_STREAM_API_KEY;
-const beurl = getBackendUrl();
+
 const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
   const { user, isLoaded } = useUser();
@@ -24,7 +24,8 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
           throw new Error("No authentication token available");
         }
 
-        const response = await fetch(`${beurl}/api/stream/token`, {
+        const backendUrl = getBackendUrl();
+        const response = await fetch(`${backendUrl}/api/stream/token`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
