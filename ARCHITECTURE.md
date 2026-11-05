@@ -99,3 +99,11 @@ sequenceDiagram
     DB-->>App: Session recorded
     App->>User: Renders MeetingRoom & media tracks
 ```
+
+---
+
+## ?? Architectural Contributors & Maintainers
+
+- **Tanmay Nilesh Shinde** (@TanmayNileshShinde) - Lead Architect & Core Systems
+- **Antara Parab** (@Antara-Parab) - Frontend Systems & Video Integration
+
