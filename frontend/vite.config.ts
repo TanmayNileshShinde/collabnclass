@@ -23,6 +23,38 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@stream-io')) {
+                return 'vendor-stream';
+              }
+              if (id.includes('@clerk')) {
+                return 'vendor-clerk';
+              }
+              if (id.includes('@excalidraw')) {
+                return 'vendor-excalidraw';
+              }
+              if (id.includes('shiki')) {
+                return 'vendor-shiki';
+              }
+              if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react/')) {
+                return 'vendor-react';
+              }
+              if (id.includes('lucide-react')) {
+                return 'vendor-icons';
+              }
+              if (id.includes('@radix-ui')) {
+                return 'vendor-radix';
+              }
+            }
+          },
+        },
+      },
+    },
     define: {
       __APP_ENV__: JSON.stringify(mode),
     },
