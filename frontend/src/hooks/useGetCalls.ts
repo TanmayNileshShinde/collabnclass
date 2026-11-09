@@ -8,10 +8,12 @@ export const useGetCalls = () => {
   const [calls, setCalls] = useState<Call[]>();
   const [isLoading, setIsLoading] = useState(false);
 
-  const loadCalls = useCallback(async () => {
+  const loadCalls = useCallback(async (silent = false) => {
     if (!client || !user?.id) return;
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+    }
 
     try {
       // query meetings
@@ -30,7 +32,9 @@ export const useGetCalls = () => {
     } catch (error) {
       console.error('Failed to load calls:', error);
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   }, [client, user?.id]);
 
@@ -38,10 +42,10 @@ export const useGetCalls = () => {
     loadCalls();
   }, [loadCalls]);
 
-  // poll status
+  // poll status silently in background without flickering UI loader
   useEffect(() => {
     const interval = setInterval(() => {
-      loadCalls();
+      loadCalls(true);
     }, 30000);
     return () => clearInterval(interval);
   }, [loadCalls]);

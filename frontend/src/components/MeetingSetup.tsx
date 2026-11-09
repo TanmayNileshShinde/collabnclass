@@ -215,7 +215,9 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     let animationFrameId: number;
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       audioContext = new AudioCtx();
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 64;
