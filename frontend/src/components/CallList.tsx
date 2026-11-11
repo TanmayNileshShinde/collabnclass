@@ -135,9 +135,11 @@ const CallList = ({
       }
 
       setRecordings((prev) =>
-        prev.filter(
-          (r) => r.filename !== recording.filename && r.url !== recording.url
-        )
+        prev.filter((r) => {
+          if (recording.url && r.url) return r.url !== recording.url;
+          if (recording.filename && r.filename) return r.filename !== recording.filename;
+          return r !== recording;
+        })
       );
 
       toast({

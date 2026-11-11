@@ -47,7 +47,8 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
 
   const calculateDuration = (joinedAt: string, leftAt: string | null) => {
     if (!leftAt) return null; // still in meeting
-    const durationMs = new Date(leftAt).getTime() - new Date(joinedAt).getTime();
+    const durationMs = Math.max(0, new Date(leftAt).getTime() - new Date(joinedAt).getTime());
+    if (durationMs < 60000) return "< 1m";
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;

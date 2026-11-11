@@ -15,12 +15,13 @@ import { useClassroom } from "@/contexts/ClassroomContext";
  * Extracts up to two capitalized initials from a display name.
  */
 export const getParticipantInitials = (name?: string): string => {
-  if (!name) return "U";
-  const parts = name.trim().split(/\s+/);
+  const trimmed = name?.trim();
+  if (!trimmed) return "U";
+  const parts = trimmed.split(/\s+/);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
-  return name.slice(0, 2).toUpperCase();
+  return trimmed.slice(0, 2).toUpperCase() || "U";
 };
 
 /**

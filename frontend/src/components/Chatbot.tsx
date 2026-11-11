@@ -158,10 +158,10 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Chatbot error:", error);
 
-      const rawMsg = error?.message || "";
+      const rawMsg = error instanceof Error ? error.message : "";
       let displayText = "I'm having trouble connecting right now. Please verify your connection or try again in a moment.";
 
       if (rawMsg.includes("GROQ_API_KEY")) {
