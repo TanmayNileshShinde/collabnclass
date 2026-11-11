@@ -23,8 +23,22 @@ const requestTimestamps = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 seconds
 const MAX_REQUESTS_PER_WINDOW = 20; // 20 requests per minute
 
+const pruneRateLimiter = (now: number) => {
+  if (requestTimestamps.size > 1000) {
+    for (const [k, v] of requestTimestamps.entries()) {
+      const active = v.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+      if (active.length === 0) {
+        requestTimestamps.delete(k);
+      } else {
+        requestTimestamps.set(k, active);
+      }
+    }
+  }
+};
+
 const checkRateLimit = (key: string): { allowed: boolean; retryAfter?: number } => {
   const now = Date.now();
+  pruneRateLimiter(now);
   const timestamps = (requestTimestamps.get(key) || []).filter(
     (time) => now - time < RATE_LIMIT_WINDOW_MS
   );

@@ -92,8 +92,16 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
     if (!token) {
       return res.status(401).json({ error: "Token is missing" });
     }
+
+    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+    if (!clerkSecretKey) {
+      return res.status(503).json({
+        error: "CLERK_SECRET_KEY is missing on the server. Please set it in backend .env",
+      });
+    }
+
     const decoded = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY!,
+      secretKey: clerkSecretKey,
     });
 
     if (!decoded || !decoded.sub) {
@@ -119,7 +127,11 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const { owner, repo } = req.params;
-      const path = req.params[0] || ""; // Get the rest of the path
+      const rawPath = req.params[0] || "";
+      const path = rawPath.replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "");
+      if (path.includes("..")) {
+        return res.status(400).json({ error: "Invalid path: directory traversal is not allowed" });
+      }
       const cacheKey = `contents:${owner}:${repo}:${path}`;
 
       const cached = getCached(cacheKey);
@@ -138,7 +150,7 @@ router.get(
         headers["Authorization"] = `Bearer ${githubToken}`;
       }
 
-      const response = await axios.get(githubApiUrl, { headers });
+      const response = await axios.get(githubApiUrl, { headers, timeout: 10000 });
       setCache(cacheKey, response.data);
       res.json(response.data);
     } catch (error: unknown) {
@@ -169,7 +181,7 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: 
       headers["Authorization"] = `Bearer ${githubToken}`;
     }
 
-    const response = await axios.get(githubApiUrl, { headers });
+    const response = await axios.get(githubApiUrl, { headers, timeout: 10000 });
     setCache(cacheKey, response.data);
     res.json(response.data);
   } catch (error: unknown) {
@@ -199,7 +211,7 @@ router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response)
       headers["Authorization"] = `Bearer ${githubToken}`;
     }
 
-    const response = await axios.get(githubApiUrl, { headers });
+    const response = await axios.get(githubApiUrl, { headers, timeout: 10000 });
     setCache(cacheKey, response.data);
     res.json(response.data);
   } catch (error: unknown) {
