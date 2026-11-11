@@ -72,6 +72,7 @@ export const NetworkDiagnosticsModal: React.FC<NetworkDiagnosticsModalProps> = (
       const AudioCtx =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
       audioContext = new AudioCtx();
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 64;

@@ -39,7 +39,8 @@ const ClassroomContext = createContext<ClassroomContextType | null>(null);
 const playHandRaiseChime = () => {
   try {
     const AudioContextClass =
-      window.AudioContext || (window as any).webkitAudioContext;
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
     const osc = ctx.createOscillator();
@@ -54,6 +55,10 @@ const playHandRaiseChime = () => {
 
     osc.connect(gain);
     gain.connect(ctx.destination);
+
+    osc.onended = () => {
+      ctx.close().catch(() => {});
+    };
 
     osc.start();
     osc.stop(ctx.currentTime + 0.35);
