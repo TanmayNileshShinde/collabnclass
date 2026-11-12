@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, memo, lazy, Suspense } from "react";
 import {
   ReactionsButton,
   RecordCallButton,
@@ -215,6 +215,23 @@ const ClassroomEndedModal = ({ onLeave, endedByName }: ClassroomEndedModalProps)
   );
 };
 
+const LiveMeetingClock = memo(() => {
+  const [time, setTime] = useState(() =>
+    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+  );
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(
+        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      );
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return <span>{time}</span>;
+});
+LiveMeetingClock.displayName = "LiveMeetingClock";
+
 const MeetingRoomContent = () => {
   const [searchParams] = useSearchParams();
   const isPersonalRoom = !!searchParams.get("personal");
@@ -389,19 +406,6 @@ const MeetingRoomContent = () => {
       microphone.toggle();
     }
   };
-
-// Live ticking clock
-  const [time, setTime] = useState(
-    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-  );
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTime(
-        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-      );
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   // end-call listener
   useEffect(() => {
@@ -798,7 +802,7 @@ const MeetingRoomContent = () => {
         >
           <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300">
             <Clock size={12} className="text-cyan-400 animate-pulse" />
-            <span>{time}</span>
+            <LiveMeetingClock />
           </div>
           <span className="w-px h-3.5 bg-white/10" />
           <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-300 group-hover:text-white transition-colors">

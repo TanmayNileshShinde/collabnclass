@@ -47,18 +47,24 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
 
   const calculateDuration = (joinedAt: string, leftAt: string | null) => {
     if (!leftAt) return null; // still in meeting
-    const durationMs = Math.max(0, new Date(leftAt).getTime() - new Date(joinedAt).getTime());
+    const startMs = new Date(joinedAt).getTime();
+    const endMs = new Date(leftAt).getTime();
+    if (isNaN(startMs) || isNaN(endMs)) return null;
+    const durationMs = Math.max(0, endMs - startMs);
     if (durationMs < 60000) return "< 1m";
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
-  const formatTime = (timeString: string) =>
-    new Date(timeString).toLocaleString(undefined, {
+  const formatTime = (timeString: string) => {
+    const d = new Date(timeString);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
       month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit',
     });
+  };
 
   const getInitials = (name?: string) => {
     if (!name) return "U";
