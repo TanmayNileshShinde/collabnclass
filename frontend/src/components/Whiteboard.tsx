@@ -32,6 +32,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
   const { toast } = useToast();
 
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const syncIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRemoteUpdateRef = useRef(false);
 
   // room key
@@ -92,7 +93,10 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
               timestamp: Date.now(),
             });
             setIsLiveSyncActive(true);
-            setTimeout(() => setIsLiveSyncActive(false), 1200);
+            if (syncIndicatorTimeoutRef.current) {
+              clearTimeout(syncIndicatorTimeoutRef.current);
+            }
+            syncIndicatorTimeoutRef.current = setTimeout(() => setIsLiveSyncActive(false), 1200);
           } catch (err) {
             console.error("Failed to broadcast whiteboard update:", err);
           }
@@ -190,6 +194,9 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       (call as any).off("custom", handleCustomEvent);
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current);
+      }
+      if (syncIndicatorTimeoutRef.current) {
+        clearTimeout(syncIndicatorTimeoutRef.current);
       }
     };
   }, [call, user?.id, user?.fullName, user?.firstName, excalidrawAPI, saveToStorage, storageKey, toast]);
