@@ -94,9 +94,15 @@ const CallList = ({
       } else {
         const r = meeting as CallRecording;
         const filename = (r.filename || "").toLowerCase();
-        const dateStr = r.start_time
-          ? new Date(r.start_time).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }).toLowerCase()
-          : "";
+        let dateStr = "";
+        if (r.start_time) {
+          const parsed = new Date(r.start_time);
+          if (!isNaN(parsed.getTime())) {
+            dateStr = parsed
+              .toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+              .toLowerCase();
+          }
+        }
         return filename.includes(q) || dateStr.includes(q) || (r.url || "").toLowerCase().includes(q);
       }
     });
@@ -273,10 +279,15 @@ const CallList = ({
                 date={
                   !isCall
                     ? (meeting as CallRecording).start_time
-                      ? new Date((meeting as CallRecording).start_time).toLocaleString([], {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })
+                      ? (() => {
+                          const d = new Date((meeting as CallRecording).start_time);
+                          return !isNaN(d.getTime())
+                            ? d.toLocaleString([], {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })
+                            : "Date not set";
+                        })()
                       : "Date not set"
                     : (meeting as Call).state?.startsAt
                     ? (meeting as Call).state.startsAt!.toLocaleString([], {
