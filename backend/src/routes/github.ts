@@ -66,6 +66,15 @@ const handleGitHubError = (res: Response, error: unknown, defaultMsg: string) =>
       (typeof axiosErr.response?.data?.message === "string" &&
         axiosErr.response.data.message.toLowerCase().includes("rate limit")));
 
+  const resetHeader = axiosErr.response?.headers?.["x-ratelimit-reset"];
+  let retryAfterSeconds: number | undefined;
+  if (resetHeader) {
+    const resetEpoch = parseInt(String(resetHeader), 10);
+    if (!isNaN(resetEpoch)) {
+      retryAfterSeconds = Math.max(0, Math.ceil(resetEpoch - Date.now() / 1000));
+    }
+  }
+
   const errorMessage = isRateLimit
     ? "GitHub API rate limit exceeded (60 requests/hr unauthenticated limit). Cached entries will continue to serve. Please wait a few moments or configure GITHUB_TOKEN in backend environment variables."
     : axiosErr.response?.data?.message || (axiosErr instanceof Error ? axiosErr.message : defaultMsg);
@@ -73,7 +82,7 @@ const handleGitHubError = (res: Response, error: unknown, defaultMsg: string) =>
   res.status(statusCode).json({
     error: errorMessage,
     isRateLimit,
-    retryAfter: axiosErr.response?.headers?.["x-ratelimit-reset"],
+    retryAfter: retryAfterSeconds ?? (isRateLimit ? 60 : undefined),
     details: axiosErr.response?.data || (axiosErr instanceof Error ? axiosErr.message : defaultMsg),
   });
 };
