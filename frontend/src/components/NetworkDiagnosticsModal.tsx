@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
 import {
   Activity,
@@ -55,6 +55,15 @@ export const NetworkDiagnosticsModal: React.FC<NetworkDiagnosticsModalProps> = (
   const [audioLevel, setAudioLevel] = useState(0);
   const [isResyncing, setIsResyncing] = useState(false);
   const [resyncSuccess, setResyncSuccess] = useState(false);
+  const resyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resyncTimerRef.current) {
+        clearTimeout(resyncTimerRef.current);
+      }
+    };
+  }, []);
 
   // monitor audio
   useEffect(() => {
@@ -143,9 +152,15 @@ export const NetworkDiagnosticsModal: React.FC<NetworkDiagnosticsModalProps> = (
       }
 
       setResyncSuccess(true);
-      setTimeout(() => setResyncSuccess(false), 2500);
+      if (resyncTimerRef.current) {
+        clearTimeout(resyncTimerRef.current);
+      }
+      resyncTimerRef.current = setTimeout(() => {
+        setResyncSuccess(false);
+      }, 2500);
     } catch (err) {
       console.error("Resync failed:", err);
+      setResyncSuccess(false);
     } finally {
       setIsResyncing(false);
     }
