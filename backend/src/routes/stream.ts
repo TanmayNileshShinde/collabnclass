@@ -130,6 +130,7 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
               params: {
                 api_key: process.env.STREAM_API_KEY,
               },
+              timeout: 10000,
             }
           ).catch((err) => {
             console.warn("Stream REST API delete warning:", err?.response?.data || err.message);

@@ -101,6 +101,12 @@ router.post("/chatbot", async (req: Request, res: Response) => {
         .json({ error: "A valid 'message' string is required." });
     }
 
+    if (message.length > 4000) {
+      return res
+        .status(400)
+        .json({ error: "Message exceeds maximum allowed length of 4000 characters." });
+    }
+
     const groq = getGroqClient();
     if (!groq) {
       return res.status(503).json({
@@ -113,7 +119,7 @@ router.post("/chatbot", async (req: Request, res: Response) => {
 
     // recent history
     if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-      contextMessages = conversationHistory.slice(-5).map((msg: any) => ({
+      contextMessages = conversationHistory.slice(-5).map((msg: { role?: unknown; content?: unknown }) => ({
         role: msg.role === "assistant" ? "assistant" : "user",
         content: String(msg.content || ""),
       }));

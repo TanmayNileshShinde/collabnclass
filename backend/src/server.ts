@@ -31,7 +31,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 app.use("/api/stream", streamRoutes);
 app.use("/api/github", githubRoutes);
@@ -39,6 +39,17 @@ app.use("/api", chatbotRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+// Centralized JSON error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err) {
+    console.error("Internal Server Error:", err);
+    return res.status(err.status || 500).json({
+      error: err.message || "An unexpected error occurred on the server.",
+    });
+  }
+  next();
 });
 
 process.on("unhandledRejection", (reason, promise) => {
