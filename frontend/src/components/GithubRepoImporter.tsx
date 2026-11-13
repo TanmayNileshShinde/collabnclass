@@ -219,6 +219,9 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       path: string = ''
     ): Promise<GitHubFileItem[]> => {
       const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token is missing. Please sign in again.');
+      }
       const url = `${beurl}/api/github/repo/${owner}/${repo}/contents${path ? '/' + path : ''}`;
       const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) {
@@ -227,7 +230,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       }
       const data = await response.json();
       if (Array.isArray(data)) {
-        return data.map((item: any) => ({
+        return data.map((item: GitHubFileItem) => ({
           name: item.name,
           type: item.type,
           path: item.path,
@@ -243,6 +246,9 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
   const fetchRepoInfo = useCallback(
     async (owner: string, repo: string) => {
       const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token is missing. Please sign in again.');
+      }
       const response = await fetch(`${beurl}/api/github/repo/${owner}/${repo}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -257,6 +263,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
 
   // sync pointer
   useEffect(() => {
+    let isSubscribed = true;
     const imported = call?.state.custom?.importedRepo;
     if (!imported) return;
 
@@ -283,15 +290,23 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       setIsLoading(true);
       fetchRepoContents(targetOwner, targetRepo)
         .then((contents) => {
-          setFileTree(contents);
+          if (isSubscribed) {
+            setFileTree(contents);
+          }
         })
         .catch((err) => {
           console.error('Failed to lazily load repo contents:', err);
         })
         .finally(() => {
-          setIsLoading(false);
+          if (isSubscribed) {
+            setIsLoading(false);
+          }
         });
     }
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [call?.state.custom?.importedRepo, fetchRepoContents, repoInfo]);
 
   const handleImportRepo = async () => {
@@ -379,7 +394,14 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
 
       setFileViewMode('code');
 
-      const response = await fetch(item.download_url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      let response: Response;
+      try {
+        response = await fetch(item.download_url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       if (!response.ok) throw new Error('Failed to fetch file content');
       const text = await response.text();
 
@@ -392,8 +414,15 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
         const html = await highlightCode(text, item.path);
         setHighlightedHtml(html);
       }
-    } catch (error: any) {
-      toast({ title: 'Failed to load file', description: error.message || 'Unable to load file content', variant: 'destructive' });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : 'Unable to load file content';
+      toast({
+        title: 'Failed to load file',
+        description: errMsg.includes('aborted')
+          ? 'Request timed out while downloading file'
+          : errMsg,
+        variant: 'destructive',
+      });
     } finally {
       setIsFileLoading(false);
     }
