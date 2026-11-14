@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import Loader from "./Loader";
 import { supabase } from "@/lib/supabaseClient";
@@ -24,10 +24,22 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const fetchAttendance = async (silent = false) => {
     if (!meetingId) return;
-    silent ? setIsRefreshing(true) : setIsLoading(true);
+    if (silent) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from('meeting_attendance')
@@ -35,13 +47,20 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
         .eq('meeting_id', meetingId)
         .order('joined_at', { ascending: true });
 
-      if (error) { console.error('Error fetching attendance:', error); return; }
+      if (!isMountedRef.current) return;
+      if (error) {
+        console.error('Error fetching attendance:', error);
+        return;
+      }
       setAttendance(data || []);
     } catch (error) {
+      if (!isMountedRef.current) return;
       console.error('Error fetching attendance:', error);
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
   };
 
@@ -439,7 +458,7 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
                           {attendance.map((record) => {
                             const duration = calculateDuration(record.joined_at, record.left_at);
                             return (
-                              <tr key={record.id} className="am-row">
+                              <tr key={record.id || `${record.user_id}-${record.joined_at}`} className="am-row">
                                 <td className="am-td">
                                   <div className="am-user-cell">
                                     <div className="am-avatar">{getInitials(record.user_name)}</div>

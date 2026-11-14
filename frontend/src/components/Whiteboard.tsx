@@ -35,6 +35,16 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
   const syncIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRemoteUpdateRef = useRef(false);
 
+  const triggerSyncIndicator = useCallback(() => {
+    setIsLiveSyncActive(true);
+    if (syncIndicatorTimeoutRef.current) {
+      clearTimeout(syncIndicatorTimeoutRef.current);
+    }
+    syncIndicatorTimeoutRef.current = setTimeout(() => {
+      setIsLiveSyncActive(false);
+    }, 1200);
+  }, []);
+
   // room key
   const storageKey = call?.id
     ? `${STORAGE_KEY_PREFIX}-${call.id}`
@@ -92,11 +102,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
               senderName: user?.fullName || user?.firstName || "Peer",
               timestamp: Date.now(),
             });
-            setIsLiveSyncActive(true);
-            if (syncIndicatorTimeoutRef.current) {
-              clearTimeout(syncIndicatorTimeoutRef.current);
-            }
-            syncIndicatorTimeoutRef.current = setTimeout(() => setIsLiveSyncActive(false), 1200);
+            triggerSyncIndicator();
           } catch (err) {
             console.error("Failed to broadcast whiteboard update:", err);
           }
@@ -126,7 +132,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
           });
           saveToStorage(customData.elements, excalidrawAPI.getAppState());
           setLastSyncedBy(customData.senderName || "Peer");
-          setIsLiveSyncActive(true);
+          triggerSyncIndicator();
         }
       }
 
@@ -158,7 +164,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
           });
           saveToStorage(customData.elements, excalidrawAPI.getAppState());
           setLastSyncedBy(customData.senderName || "Peer");
-          setIsLiveSyncActive(true);
+          triggerSyncIndicator();
         }
       }
 
