@@ -106,7 +106,12 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
       return res.status(400).json({ error: "Recording ID is required" });
     }
 
-    const decodedRecordingId = decodeURIComponent(recordingId as string);
+    let decodedRecordingId = String(recordingId);
+    try {
+      decodedRecordingId = decodeURIComponent(recordingId as string);
+    } catch {
+      decodedRecordingId = String(recordingId);
+    }
 
     // client delete
     const client = getStreamClient();

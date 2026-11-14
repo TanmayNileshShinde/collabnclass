@@ -79,12 +79,20 @@ const handleGitHubError = (res: Response, error: unknown, defaultMsg: string) =>
     ? "GitHub API rate limit exceeded (60 requests/hr unauthenticated limit). Cached entries will continue to serve. Please wait a few moments or configure GITHUB_TOKEN in backend environment variables."
     : axiosErr.response?.data?.message || (axiosErr instanceof Error ? axiosErr.message : defaultMsg);
 
+  if (isRateLimit) {
+    res.setHeader("Retry-After", String(retryAfterSeconds ?? 60));
+  }
+
   res.status(statusCode).json({
     error: errorMessage,
     isRateLimit,
     retryAfter: retryAfterSeconds ?? (isRateLimit ? 60 : undefined),
     details: axiosErr.response?.data || (axiosErr instanceof Error ? axiosErr.message : defaultMsg),
   });
+};
+
+const isValidRepoIdentifier = (str: string): boolean => {
+  return typeof str === "string" && /^[a-zA-Z0-9_.-]+$/.test(str);
 };
 
 // clerk middleware
@@ -136,6 +144,9 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const { owner, repo } = req.params;
+      if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(repo)) {
+        return res.status(400).json({ error: "Invalid repository owner or name." });
+      }
       const rawPath = req.params[0] || "";
       const path = rawPath.replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "");
       if (path.includes("..")) {
@@ -172,6 +183,9 @@ router.get(
 router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
+    if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(repo)) {
+      return res.status(400).json({ error: "Invalid repository owner or name." });
+    }
     const cacheKey = `contents:${owner}:${repo}:root`;
 
     const cached = getCached(cacheKey);
@@ -202,6 +216,9 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: 
 router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
+    if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(repo)) {
+      return res.status(400).json({ error: "Invalid repository owner or name." });
+    }
     const cacheKey = `info:${owner}:${repo}`;
 
     const cached = getCached(cacheKey);
