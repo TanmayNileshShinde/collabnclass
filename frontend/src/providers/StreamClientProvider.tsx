@@ -85,6 +85,9 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
         image: user?.imageUrl,
       },
       tokenProvider,
+      options: {
+        enableWSFallback: true,
+      },
     });
 
     setVideoClient(client);
