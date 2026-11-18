@@ -11,7 +11,7 @@ let streamClientInstance: StreamClient | null = null;
 const getStreamClient = (): StreamClient | null => {
   if (streamClientInstance) return streamClientInstance;
   const apiKey = process.env.STREAM_API_KEY;
-  const apiSecret = process.env.STREAM_SECRET_KEY;
+  const apiSecret = process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET;
   if (!apiKey || !apiSecret) return null;
   streamClientInstance = new StreamClient(apiKey, apiSecret);
   return streamClientInstance;
@@ -57,6 +57,42 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
       .json({ error: `Authentication failed: ${errorMessage}` });
   }
 };
+
+// Fallback STUN/TURN servers for restricted networks (Issue #2)
+router.get("/ice-servers", async (req: Request, res: Response) => {
+  try {
+    const defaultStunServers = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      { urls: "stun:global.stun.twilio.com:3478" },
+    ];
+
+    const customTurnUrl = process.env.CUSTOM_TURN_URL;
+    const customTurnUsername = process.env.CUSTOM_TURN_USERNAME;
+    const customTurnCredential = process.env.CUSTOM_TURN_CREDENTIAL;
+
+    const iceServers: Array<{ urls: string; username?: string; credential?: string }> = [
+      ...defaultStunServers,
+    ];
+    if (customTurnUrl && customTurnUsername && customTurnCredential) {
+      iceServers.push({
+        urls: customTurnUrl,
+        username: customTurnUsername,
+        credential: customTurnCredential,
+      });
+    }
+
+    res.json({
+      iceServers,
+      fallbackEnabled: true,
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    console.error("Error retrieving ICE servers:", error);
+    res.status(500).json({ error: "Failed to load ICE servers" });
+  }
+});
 
 // get stream token
 router.post("/token", verifyAuth, async (req: Request, res: Response) => {
@@ -122,7 +158,7 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
           await (client as any).deleteRecording(decodedRecordingId);
         } else if (typeof (client as any).video?.deleteRecording === "function") {
           await (client as any).video.deleteRecording(decodedRecordingId);
-        } else if (process.env.STREAM_API_KEY && process.env.STREAM_SECRET_KEY) {
+        } else if (process.env.STREAM_API_KEY && (process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET)) {
           const serverToken = client.createToken("admin");
           await axios.delete(
             `https://video.stream-io-api.com/api/v2/video/recordings/${encodeURIComponent(decodedRecordingId)}`,
