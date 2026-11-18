@@ -7,6 +7,7 @@ import { useGetCalls } from "@/hooks/useGetCalls";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { HeroLiveClock } from "@/components/LiveClockBadge";
 import {
   Radio,
   Calendar,
@@ -243,26 +244,10 @@ const Home = () => {
   const { toast } = useToast();
   const { liveCalls, upcomingCalls, endedCalls } = useGetCalls();
 
-  const now = new Date();
-  const [time, setTime] = useState(
-    now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-  );
-  const date = new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(now);
-
   // command bar
   const [quickCode, setQuickCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [isCopiedPersonal, setIsCopiedPersonal] = useState(false);
-
-  // live clock
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTime(
-        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-      );
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   // greeting
   const greeting = useMemo(() => {
@@ -522,26 +507,7 @@ const Home = () => {
 
           {/* Bottom Hero Info: Big Clock, Date & Quick Personal Link */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-auto">
-            <div className="flex flex-col">
-              <div className="relative inline-block leading-none">
-                {/* Dark Theme Clock Layer */}
-                <h1
-                  className="hero-clock-text hero-clock-dark text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none transition-opacity duration-300 dark:opacity-100 opacity-0"
-                >
-                  {time}
-                </h1>
-                {/* Light Theme Clock Layer */}
-                <h1
-                  aria-hidden="true"
-                  className="hero-clock-text hero-clock-light text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold tracking-tight select-none leading-none absolute inset-0 transition-opacity duration-300 dark:opacity-0 opacity-100 pointer-events-none"
-                >
-                  {time}
-                </h1>
-              </div>
-              <p className="text-xs sm:text-base font-semibold dark:text-cyan-100/80 text-slate-600 mt-1 sm:mt-2 tracking-wide transition-colors duration-300">
-                {date}
-              </p>
-            </div>
+            <HeroLiveClock />
 
             {/* Quick Personal Room Pill */}
             {user && (

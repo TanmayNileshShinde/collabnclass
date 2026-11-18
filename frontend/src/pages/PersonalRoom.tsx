@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +9,6 @@ import {
   Calendar,
   Check,
   Radio,
-  Clock,
   Sparkles,
   ShieldCheck,
   Share2,
@@ -20,6 +19,7 @@ import {
 import { useGetCallById } from "@/hooks/useGetCallById";
 import { useToast } from "@/components/ui/use-toast";
 import { formatMeetingCode } from "@/lib/meetingUtils";
+import LiveClockBadge from "@/components/LiveClockBadge";
 
 // Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home & Upcoming)
 const OceanWaves = () => (
@@ -131,26 +131,6 @@ const PersonalRoom = () => {
   const [isCopiedId, setIsCopiedId] = useState(false);
   const [isCopiedInvitation, setIsCopiedInvitation] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-
-  // live clock
-  const now = new Date();
-  const [time, setTime] = useState(
-    now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-  );
-  const dateStr = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  }).format(now);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTime(
-        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-      );
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   const meetingId = user?.id || "";
   const { call } = useGetCallById(meetingId);
@@ -277,19 +257,7 @@ const PersonalRoom = () => {
             {/* Right: Live Telemetry & Bento Counter Pill */}
             <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 shrink-0 w-full sm:w-auto">
               {/* Live Clock Card */}
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl">
-                <div className="p-2 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
-                  <Clock className="w-5 h-5 animate-pulse" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base sm:text-lg font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
-                    {time}
-                  </span>
-                  <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
-                    {dateStr}
-                  </span>
-                </div>
-              </div>
+              <LiveClockBadge dateMode="condensed" />
 
               {/* Status Chips */}
               <div className="flex items-center gap-2 flex-wrap">

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import CallList from "@/components/CallList";
 import { useGetCalls } from "@/hooks/useGetCalls";
-import { History, Users, Search, X, Clock, Calendar } from "lucide-react";
+import { History, Users, Search, X, Calendar } from "lucide-react";
+import LiveClockBadge from "@/components/LiveClockBadge";
 
 // svg waves
 const OceanWaves = () => (
@@ -107,25 +108,6 @@ const Previous = () => {
   const { endedCalls } = useGetCalls();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const now = new Date();
-  const [time, setTime] = useState(
-    now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-  );
-  const dateStr = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  }).format(now);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTime(
-        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-      );
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-
   const totalEndedCount = endedCalls?.length ?? 0;
 
   return (
@@ -181,19 +163,7 @@ const Previous = () => {
             {/* Right Telemetry Badge */}
             <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 shrink-0 w-full sm:w-auto">
               {/* Live Clock Card */}
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl">
-                <div className="p-2 rounded-xl dark:bg-cyan-500/10 bg-sky-50 text-cyan-500 dark:text-cyan-400">
-                  <Clock className="w-5 h-5 animate-pulse" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base sm:text-lg font-bold font-mono tracking-wider dark:text-cyan-300 text-slate-800">
-                    {time}
-                  </span>
-                  <span className="text-[11px] font-medium dark:text-neutral-400 text-slate-500">
-                    {dateStr}
-                  </span>
-                </div>
-              </div>
+              <LiveClockBadge dateMode="condensed" />
 
               {/* Sessions Counter Chip */}
               <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 shadow-md backdrop-blur-xl shrink-0">
