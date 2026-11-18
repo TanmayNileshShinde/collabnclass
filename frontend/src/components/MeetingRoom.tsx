@@ -19,6 +19,8 @@ import GithubRepoImporter from "./GithubRepoImporter";
 const Whiteboard = lazy(() => import("./Whiteboard"));
 import MeetingSideDock, { SideDockTab } from "./MeetingSideDock";
 import NetworkDiagnosticsModal from "./NetworkDiagnosticsModal";
+import ErrorBoundary from "./ErrorBoundary";
+import ClientSessionRecorder from "./ClientSessionRecorder";
 import {
   CustomVideoPlaceholder,
   CustomParticipantViewUI,
@@ -966,7 +968,12 @@ const MeetingRoomContent = () => {
             </div>
           }
         >
-          <Whiteboard onClose={() => setShowWhiteboard(false)} />
+          <ErrorBoundary
+            fallbackTitle="Whiteboard Canvas Error"
+            fallbackMessage="An error occurred inside the drawing canvas. You can safely retry without reloading the room."
+          >
+            <Whiteboard onClose={() => setShowWhiteboard(false)} />
+          </ErrorBoundary>
         </Suspense>
       )}
 
@@ -1365,6 +1372,8 @@ const MeetingRoomContent = () => {
             <CallStatsButton />
 
             <RecordCallButton />
+
+            <ClientSessionRecorder callId={call?.id} />
 
             {/* Keyboard Shortcuts Trigger Button */}
             <button
