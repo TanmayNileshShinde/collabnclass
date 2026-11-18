@@ -22,17 +22,28 @@ const getGroqClient = (): Groq | null => {
 const requestTimestamps = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 60 seconds
 const MAX_REQUESTS_PER_WINDOW = 20; // 20 requests per minute
+const PRUNE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+const sweepRateLimiter = (now = Date.now()) => {
+  for (const [k, v] of requestTimestamps.entries()) {
+    const active = v.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+    if (active.length === 0) {
+      requestTimestamps.delete(k);
+    } else {
+      requestTimestamps.set(k, active);
+    }
+  }
+};
+
+// Periodic background cleanup of expired rate limit entries to prevent memory buildup
+const rateLimiterSweepInterval = setInterval(() => {
+  sweepRateLimiter();
+}, PRUNE_INTERVAL_MS);
+rateLimiterSweepInterval.unref();
 
 const pruneRateLimiter = (now: number) => {
   if (requestTimestamps.size > 1000) {
-    for (const [k, v] of requestTimestamps.entries()) {
-      const active = v.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-      if (active.length === 0) {
-        requestTimestamps.delete(k);
-      } else {
-        requestTimestamps.set(k, active);
-      }
-    }
+    sweepRateLimiter(now);
   }
 };
 

@@ -38,7 +38,17 @@ app.use("/api/github", githubRoutes);
 app.use("/api", chatbotRoutes);
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    services: {
+      clerk: Boolean(process.env.CLERK_SECRET_KEY),
+      stream: Boolean(process.env.STREAM_API_KEY && process.env.STREAM_API_SECRET),
+      groq: Boolean(process.env.GROQ_API_KEY),
+      github: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+    },
+  });
 });
 
 // Centralized JSON error handler
