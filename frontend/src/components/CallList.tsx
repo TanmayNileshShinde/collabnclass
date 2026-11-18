@@ -166,6 +166,8 @@ const CallList = ({
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchRecordings = async () => {
       try {
         const settledCalls = await Promise.allSettled(
@@ -179,15 +181,23 @@ const CallList = ({
           }
         }
 
-        setRecordings(recs);
+        if (isMounted) {
+          setRecordings(recs);
+        }
       } catch (err) {
-        console.error("Failed to query recordings:", err);
+        if (isMounted) {
+          console.error("Failed to query recordings:", err);
+        }
       }
     };
 
     if (type === "recordings") {
       fetchRecordings();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [type, callRecordings]);
 
   if (isLoading) return <Loader />;
