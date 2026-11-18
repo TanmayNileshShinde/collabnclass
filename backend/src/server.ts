@@ -15,6 +15,8 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://localhost:4173",
+  "http://127.0.0.1:5173",
   "https://collabnclass.vercel.app",
   "https://collabclass.vercel.app",
 ].filter(Boolean) as string[];
@@ -22,7 +24,11 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/(collabclass|collabnclass).*\.vercel\.app$/.test(origin)
+      ) {
         callback(null, true);
       } else {
         callback(null, false);
@@ -44,7 +50,10 @@ app.get("/health", (req, res) => {
     uptime: Math.floor(process.uptime()),
     services: {
       clerk: Boolean(process.env.CLERK_SECRET_KEY),
-      stream: Boolean(process.env.STREAM_API_KEY && process.env.STREAM_API_SECRET),
+      stream: Boolean(
+        process.env.STREAM_API_KEY &&
+          (process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET)
+      ),
       groq: Boolean(process.env.GROQ_API_KEY),
       github: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
     },

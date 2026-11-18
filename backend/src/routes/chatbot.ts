@@ -149,19 +149,36 @@ router.post("/chatbot", async (req: Request, res: Response) => {
 
     Be concise, friendly, and helpful. Keep responses under 150 words when possible.`;
 
-    // groq api
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        ...contextMessages,
-      ],
-      max_tokens: 500,
-      temperature: 0.7,
-    });
+    // groq api with graceful fallback
+    let completion;
+    try {
+      completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          ...contextMessages,
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+    } catch (groqErr) {
+      console.warn("Primary Groq model failed, trying fallback model:", groqErr);
+      completion = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          ...contextMessages,
+        ],
+        max_tokens: 500,
+        temperature: 0.7,
+      });
+    }
 
     const response =
       completion.choices[0]?.message?.content ||
