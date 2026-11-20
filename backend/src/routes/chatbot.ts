@@ -112,7 +112,8 @@ router.post("/chatbot", async (req: Request, res: Response) => {
         .json({ error: "A valid 'message' string is required." });
     }
 
-    if (message.length > 4000) {
+    const sanitizedMessage = message.trim();
+    if (sanitizedMessage.length > 4000) {
       return res
         .status(400)
         .json({ error: "Message exceeds maximum allowed length of 4000 characters." });
@@ -130,14 +131,17 @@ router.post("/chatbot", async (req: Request, res: Response) => {
 
     // recent history
     if (Array.isArray(conversationHistory) && conversationHistory.length > 0) {
-      contextMessages = conversationHistory.slice(-5).map((msg: { role?: unknown; content?: unknown }) => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: String(msg.content || ""),
-      }));
+      contextMessages = conversationHistory
+        .slice(-6)
+        .filter((msg: any) => msg && typeof msg.content === "string" && msg.content.trim())
+        .map((msg: any) => ({
+          role: (msg.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
+          content: String(msg.content).trim().slice(0, 4000),
+        }));
     }
     contextMessages.push({
       role: "user",
-      content: message.trim(),
+      content: sanitizedMessage,
     });
 
     const systemPrompt = `You are a helpful AI assistant for video meetings. You help users with:

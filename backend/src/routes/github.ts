@@ -69,9 +69,11 @@ const handleGitHubError = (res: Response, error: unknown, defaultMsg: string) =>
   const resetHeader = axiosErr.response?.headers?.["x-ratelimit-reset"];
   let retryAfterSeconds: number | undefined;
   if (resetHeader) {
-    const resetEpoch = parseInt(String(resetHeader), 10);
-    if (!isNaN(resetEpoch)) {
-      retryAfterSeconds = Math.max(0, Math.ceil(resetEpoch - Date.now() / 1000));
+    const rawVal = Array.isArray(resetHeader) ? resetHeader[0] : String(resetHeader);
+    const resetEpoch = parseInt(rawVal, 10);
+    if (!isNaN(resetEpoch) && resetEpoch > 0) {
+      const nowEpochSec = Math.floor(Date.now() / 1000);
+      retryAfterSeconds = Math.max(0, resetEpoch - nowEpochSec);
     }
   }
 

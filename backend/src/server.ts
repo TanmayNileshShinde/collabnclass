@@ -44,10 +44,18 @@ app.use("/api/github", githubRoutes);
 app.use("/api", chatbotRoutes);
 
 app.get("/health", (req, res) => {
+  const mem = process.memoryUsage();
   res.json({
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
+    nodeVersion: process.version,
+    platform: process.platform,
+    memory: {
+      rssMb: Math.round((mem.rss / (1024 * 1024)) * 100) / 100,
+      heapTotalMb: Math.round((mem.heapTotal / (1024 * 1024)) * 100) / 100,
+      heapUsedMb: Math.round((mem.heapUsed / (1024 * 1024)) * 100) / 100,
+    },
     services: {
       clerk: Boolean(process.env.CLERK_SECRET_KEY),
       stream: Boolean(
