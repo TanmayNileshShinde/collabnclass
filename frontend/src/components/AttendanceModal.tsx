@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import Loader from "./Loader";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { RefreshCw, Users, Clock, LogIn, LogOut, AlertCircle } from "lucide-react";
 
 interface AttendanceRecord {
@@ -35,6 +35,10 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
 
   const fetchAttendance = async (silent = false) => {
     if (!meetingId) return;
+    if (!isSupabaseConfigured) {
+      setAttendance([]);
+      return;
+    }
     if (silent) {
       setIsRefreshing(true);
     } else {
@@ -490,7 +494,11 @@ const AttendanceModal = ({ isOpen, onClose, meetingId, meetingTitle }: Attendanc
                   ) : (
                     <div className="am-empty">
                       <div className="am-empty-icon"><AlertCircle size={22} /></div>
-                      <p>No attendance records found for this meeting.</p>
+                      <p>
+                        {!isSupabaseConfigured
+                          ? "Database attendance tracking is optional. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to log attendance."
+                          : "No attendance records found for this meeting."}
+                      </p>
                     </div>
                   )}
                 </div>
