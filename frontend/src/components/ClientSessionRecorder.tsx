@@ -20,11 +20,16 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const cleanupStream = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
     }
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -66,6 +71,7 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
           (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         if (AudioCtx) {
           const audioCtx = new AudioCtx();
+          audioContextRef.current = audioCtx;
           const dest = audioCtx.createMediaStreamDestination();
 
           if (displayStream.getAudioTracks().length > 0) {
@@ -171,6 +177,13 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        if (typeof mediaRecorderRef.current.requestData === "function") {
+          mediaRecorderRef.current.requestData();
+        }
+      } catch {
+        // safe fallback if requestData is not supported
+      }
       mediaRecorderRef.current.stop();
     }
   };
