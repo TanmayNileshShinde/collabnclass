@@ -146,7 +146,8 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const { owner, repo } = req.params;
-      if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(repo)) {
+      const cleanRepo = repo.replace(/\.git$/i, "");
+      if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
         return res.status(400).json({ error: "Invalid repository owner or name." });
       }
       const rawPath = req.params[0] || "";
@@ -154,14 +155,14 @@ router.get(
       if (path.includes("..")) {
         return res.status(400).json({ error: "Invalid path: directory traversal is not allowed" });
       }
-      const cacheKey = `contents:${owner}:${repo}:${path}`;
+      const cacheKey = `contents:${owner}:${cleanRepo}:${path}`;
 
       const cached = getCached(cacheKey);
       if (cached) {
         return res.json(cached);
       }
 
-      const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const githubApiUrl = `https://api.github.com/repos/${owner}/${cleanRepo}/contents/${path}`;
       const headers: Record<string, string> = {
         Accept: "application/vnd.github.v3+json",
         "User-Agent": "CollabClass-App",
@@ -185,17 +186,18 @@ router.get(
 router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
-    if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(repo)) {
+    const cleanRepo = repo.replace(/\.git$/i, "");
+    if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
     }
-    const cacheKey = `contents:${owner}:${repo}:root`;
+    const cacheKey = `contents:${owner}:${cleanRepo}:root`;
 
     const cached = getCached(cacheKey);
     if (cached) {
       return res.json(cached);
     }
 
-    const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+    const githubApiUrl = `https://api.github.com/repos/${owner}/${cleanRepo}/contents`;
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
       "User-Agent": "CollabClass-App",
@@ -218,17 +220,18 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: 
 router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
-    if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(repo)) {
+    const cleanRepo = repo.replace(/\.git$/i, "");
+    if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
     }
-    const cacheKey = `info:${owner}:${repo}`;
+    const cacheKey = `info:${owner}:${cleanRepo}`;
 
     const cached = getCached(cacheKey);
     if (cached) {
       return res.json(cached);
     }
 
-    const githubApiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+    const githubApiUrl = `https://api.github.com/repos/${owner}/${cleanRepo}`;
     const headers: Record<string, string> = {
       Accept: "application/vnd.github.v3+json",
       "User-Agent": "CollabClass-App",
