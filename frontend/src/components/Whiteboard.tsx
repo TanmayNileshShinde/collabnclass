@@ -33,7 +33,17 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const syncIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const storageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRemoteUpdateRef = useRef(false);
+
+  // Clear debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      if (syncIndicatorTimeoutRef.current) clearTimeout(syncIndicatorTimeoutRef.current);
+      if (storageTimeoutRef.current) clearTimeout(storageTimeoutRef.current);
+    };
+  }, []);
 
   const triggerSyncIndicator = useCallback(() => {
     setIsLiveSyncActive(true);
@@ -72,9 +82,26 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
     } catch (error) {
-      console.error("Error saving whiteboard data:", error);
+      if (error instanceof DOMException && error.name === "QuotaExceededError") {
+        console.warn("Whiteboard storage quota exceeded; skipping write");
+      } else {
+        console.error("Error saving whiteboard data:", error);
+      }
     }
   }, [storageKey]);
+
+  // Debounced storage write to prevent locking the main thread during high-frequency drawing
+  const debouncedSaveToStorage = useCallback(
+    (elements: any, appState: any) => {
+      if (storageTimeoutRef.current) {
+        clearTimeout(storageTimeoutRef.current);
+      }
+      storageTimeoutRef.current = setTimeout(() => {
+        saveToStorage(elements, appState);
+      }, 500);
+    },
+    [saveToStorage],
+  );
 
   // broadcast changes
   const handleChange = useCallback(
@@ -85,7 +112,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         return;
       }
 
-      saveToStorage(elements, appState);
+      debouncedSaveToStorage(elements, appState);
 
       // debounce sync
       if (call) {
@@ -109,7 +136,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         }, 120);
       }
     },
-    [call, user, saveToStorage],
+    [call, user, debouncedSaveToStorage, triggerSyncIndicator],
   );
 
   // stream events
@@ -130,7 +157,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
           excalidrawAPI.updateScene({
             elements: customData.elements,
           });
-          saveToStorage(customData.elements, excalidrawAPI.getAppState());
+          debouncedSaveToStorage(customData.elements, excalidrawAPI.getAppState());
           setLastSyncedBy(customData.senderName || "Peer");
           triggerSyncIndicator();
         }
@@ -162,7 +189,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
           excalidrawAPI.updateScene({
             elements: customData.elements,
           });
-          saveToStorage(customData.elements, excalidrawAPI.getAppState());
+          debouncedSaveToStorage(customData.elements, excalidrawAPI.getAppState());
           setLastSyncedBy(customData.senderName || "Peer");
           triggerSyncIndicator();
         }
