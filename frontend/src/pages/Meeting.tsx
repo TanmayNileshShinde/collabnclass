@@ -18,11 +18,7 @@ const Meeting = () => {
 
   if (!isLoaded || isCallLoading) return <Loader />;
 
-  if (!call) return (
-    <p className="text-center text-3xl font-bold text-dark-2 dark:text-white transition-colors">
-      Call Not Found
-    </p>
-  );
+  if (!call) return <Alert title="Classroom Not Found or Concluded" />;
 
   // custom call type
   const notAllowed =
