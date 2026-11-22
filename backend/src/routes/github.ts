@@ -155,7 +155,7 @@ router.get(
       if (path.includes("..")) {
         return res.status(400).json({ error: "Invalid path: directory traversal is not allowed" });
       }
-      const cacheKey = `contents:${owner}:${cleanRepo}:${path}`;
+      const cacheKey = `contents:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}:${path}`;
 
       const cached = getCached(cacheKey);
       if (cached) {
@@ -190,7 +190,7 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: 
     if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
     }
-    const cacheKey = `contents:${owner}:${cleanRepo}:root`;
+    const cacheKey = `contents:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}:root`;
 
     const cached = getCached(cacheKey);
     if (cached) {
@@ -224,7 +224,7 @@ router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response)
     if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
     }
-    const cacheKey = `info:${owner}:${cleanRepo}`;
+    const cacheKey = `info:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}`;
 
     const cached = getCached(cacheKey);
     if (cached) {
