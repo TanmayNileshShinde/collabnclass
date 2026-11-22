@@ -329,22 +329,29 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       setRepoInfo(info);
       setFileTree(contents);
 
-      // store pointer
-      await call?.update({
-        custom: {
-          ...call?.state.custom,
-          importedRepo: {
-            owner: parsed.owner,
-            repo: parsed.repo,
-            fullName: info.full_name,
-            description: info.description || '',
-            defaultBranch: info.default_branch || 'main',
-            importedBy: userId,
-            importedAt: new Date().toISOString(),
-          },
-        },
-      });
-      toast({ title: 'Repository imported successfully', description: `${info.full_name} is now available to all participants` });
+      // store pointer in call state if permitted (host), otherwise keep local
+      if (call) {
+        try {
+          await call.update({
+            custom: {
+              ...call.state.custom,
+              importedRepo: {
+                owner: parsed.owner,
+                repo: parsed.repo,
+                fullName: info.full_name,
+                description: info.description || '',
+                defaultBranch: info.default_branch || 'main',
+                importedBy: userId,
+                importedAt: new Date().toISOString(),
+              },
+            },
+          });
+          toast({ title: 'Repository imported successfully', description: `${info.full_name} is now available to all participants` });
+        } catch (updateErr) {
+          console.warn('Could not sync repository across call (host permission required):', updateErr);
+          toast({ title: 'Repository loaded locally', description: `${info.full_name} is ready for you to explore.` });
+        }
+      }
     } catch (error: any) {
       toast({ title: 'Failed to import repository', description: error?.message || 'Failed to import repository. Please check the URL and try again.', variant: 'destructive' });
     } finally {

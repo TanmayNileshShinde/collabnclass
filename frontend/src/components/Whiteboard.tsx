@@ -144,9 +144,9 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     if (!call) return;
 
     const handleCustomEvent = (event: any) => {
-      if (!event || event.type !== "custom") return;
-      const customData = event.custom;
-      if (!customData) return;
+      if (!event) return;
+      const customData = event.custom || event;
+      if (!customData || !customData.type) return;
 
       // peer update
       if (customData.type === "whiteboard-elements-update") {

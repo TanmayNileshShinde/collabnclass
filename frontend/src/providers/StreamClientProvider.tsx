@@ -12,22 +12,8 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
 
-  if (!API_KEY) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center p-6 dark:bg-[#020813] bg-slate-50">
-        <div className="max-w-md w-full p-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-center flex flex-col items-center gap-3">
-          <div className="p-3 rounded-full bg-amber-500/20 text-amber-500 font-bold text-xl">⚠️</div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Stream API Key Missing</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            <code>VITE_STREAM_API_KEY</code> is not configured. Please provide your Stream credentials to access live classroom features.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    if (!API_KEY || !isLoaded || !user) return;
 
     const tokenProvider = async () => {
       try {
@@ -99,6 +85,20 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
       setVideoClient(undefined);
     };
   }, [user, isLoaded, getToken]);
+
+  if (!API_KEY) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center p-6 dark:bg-[#020813] bg-slate-50">
+        <div className="max-w-md w-full p-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-center flex flex-col items-center gap-3">
+          <div className="p-3 rounded-full bg-amber-500/20 text-amber-500 font-bold text-xl">⚠️</div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Stream API Key Missing</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            <code>VITE_STREAM_API_KEY</code> is not configured. Please provide your Stream credentials to access live classroom features.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!videoClient) return <Loader />;
 
