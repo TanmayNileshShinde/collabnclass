@@ -10,8 +10,11 @@ const router = Router();
 let streamClientInstance: StreamClient | null = null;
 const getStreamClient = (): StreamClient | null => {
   if (streamClientInstance) return streamClientInstance;
-  const apiKey = process.env.STREAM_API_KEY;
-  const apiSecret = process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET;
+  const rawApiKey = process.env.STREAM_API_KEY;
+  const rawApiSecret = process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET;
+  if (!rawApiKey || !rawApiSecret) return null;
+  const apiKey = rawApiKey.trim();
+  const apiSecret = rawApiSecret.trim();
   if (!apiKey || !apiSecret) return null;
   streamClientInstance = new StreamClient(apiKey, apiSecret);
   return streamClientInstance;
@@ -99,7 +102,7 @@ router.post("/token", verifyAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
 
-    if (!userId) {
+    if (!userId || typeof userId !== "string" || !userId.trim()) {
       return res.status(401).json({ error: "User is not authenticated" });
     }
 
@@ -134,7 +137,7 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
     const { recordingId } = req.params;
     const userId = req.userId;
 
-    if (!userId) {
+    if (!userId || typeof userId !== "string" || !userId.trim()) {
       return res.status(401).json({ error: "User is not authenticated" });
     }
 

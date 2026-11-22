@@ -189,8 +189,20 @@ router.post("/chatbot", async (req: Request, res: Response) => {
       "I'm here to help with your meeting! What would you like to know?";
 
     res.json({ response });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Chatbot error:", error);
+    const isRateLimit =
+      error?.status === 429 ||
+      (typeof error?.message === "string" && error.message.toLowerCase().includes("rate limit"));
+
+    if (isRateLimit) {
+      res.setHeader("Retry-After", "30");
+      return res.status(429).json({
+        error: "AI service rate limit exceeded. Please wait a moment before asking again.",
+        details: error instanceof Error ? error.message : "Rate limit exceeded",
+      });
+    }
+
     res.status(500).json({
       error: "Failed to process message",
       details: error instanceof Error ? error.message : "Unknown error",
