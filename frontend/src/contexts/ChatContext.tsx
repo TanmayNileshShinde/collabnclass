@@ -108,9 +108,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!call) return;
 
     const handleEvent = (event: any) => {
-      if (!event || event.type !== "custom") return;
-      const custom = event.custom;
-      if (!custom) return;
+      if (!event) return;
+      const custom = event.custom || event;
+      if (!custom || !custom.type) return;
 
       // receive message
       if (custom.type === "chat-message" && custom.message) {

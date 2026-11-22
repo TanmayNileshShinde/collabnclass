@@ -7,9 +7,17 @@ export const getBackendUrl = (): string => {
   if (envUrl && typeof envUrl === "string" && envUrl.trim() !== "") {
     return envUrl.trim().replace(/\/+$/, "");
   }
-  // Default fallback for development or production relative path
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
-    return "http://localhost:4000";
+  // Default fallback for development or LAN testing
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      /^192\.168\.\d+\.\d+$/.test(host) ||
+      /^10\.\d+\.\d+\.\d+$/.test(host)
+    ) {
+      return `http://${host}:4000`;
+    }
   }
   return "";
 };
