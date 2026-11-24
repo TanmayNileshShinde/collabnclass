@@ -104,7 +104,7 @@ router.post("/chatbot", async (req: Request, res: Response) => {
       });
     }
 
-    const { message, conversationHistory = [] } = req.body;
+    const { message, conversationHistory = [] } = req.body || {};
 
     if (!message || typeof message !== "string" || !message.trim()) {
       return res

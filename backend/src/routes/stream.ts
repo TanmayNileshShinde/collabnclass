@@ -141,15 +141,15 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
       return res.status(401).json({ error: "User is not authenticated" });
     }
 
-    if (!recordingId) {
+    if (!recordingId || typeof recordingId !== "string" || !recordingId.trim()) {
       return res.status(400).json({ error: "Recording ID is required" });
     }
 
-    let decodedRecordingId = String(recordingId);
+    let decodedRecordingId = String(recordingId).trim();
     try {
-      decodedRecordingId = decodeURIComponent(recordingId as string);
+      decodedRecordingId = decodeURIComponent(decodedRecordingId);
     } catch {
-      decodedRecordingId = String(recordingId);
+      decodedRecordingId = String(recordingId).trim();
     }
 
     // client delete

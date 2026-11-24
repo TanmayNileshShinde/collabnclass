@@ -146,11 +146,14 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const { owner, repo } = req.params;
+      if (!owner || !repo) {
+        return res.status(400).json({ error: "Invalid repository owner or name." });
+      }
       const cleanRepo = repo.replace(/\.git$/i, "");
       if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
         return res.status(400).json({ error: "Invalid repository owner or name." });
       }
-      const rawPath = req.params[0] || "";
+      const rawPath = String(req.params[0] || "");
       const path = rawPath.replace(/\/{2,}/g, "/").replace(/^\/+|\/+$/g, "");
       if (path.includes("..")) {
         return res.status(400).json({ error: "Invalid path: directory traversal is not allowed" });
@@ -186,6 +189,9 @@ router.get(
 router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
+    if (!owner || !repo) {
+      return res.status(400).json({ error: "Invalid repository owner or name." });
+    }
     const cleanRepo = repo.replace(/\.git$/i, "");
     if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
@@ -220,6 +226,9 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: 
 router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response) => {
   try {
     const { owner, repo } = req.params;
+    if (!owner || !repo) {
+      return res.status(400).json({ error: "Invalid repository owner or name." });
+    }
     const cleanRepo = repo.replace(/\.git$/i, "");
     if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });

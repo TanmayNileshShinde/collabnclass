@@ -64,7 +64,11 @@ app.get("/health", (req, res) => {
           (process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET)
       ),
       groq: Boolean(process.env.GROQ_API_KEY),
-      github: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+      github: Boolean(
+        process.env.GITHUB_TOKEN ||
+          process.env.GITHUB_PERSONAL_ACCESS_TOKEN ||
+          (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET)
+      ),
     },
   });
 });
