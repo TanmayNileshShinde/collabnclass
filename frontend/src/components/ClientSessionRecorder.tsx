@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Circle, StopCircle, Pause, Play, Download, Video } from "lucide-react";
+import { Circle, StopCircle, Pause, Play, Download, Video, X } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
 interface ClientSessionRecorderProps {
@@ -204,7 +204,9 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
   };
 
   const formatTime = (secs: number) => {
@@ -268,6 +270,13 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download ({Math.round(recordedBlob.size / 1024 / 1024 * 10) / 10}MB)</span>
+          </button>
+          <button
+            onClick={() => setRecordedBlob(null)}
+            title="Discard recording"
+            className="cursor-pointer rounded-2xl bg-[#19232d] p-2 hover:bg-[#4c535b] text-neutral-300 hover:text-white flex items-center justify-center border border-slate-700 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={startRecording}

@@ -4,6 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { Send, X, MessageSquare } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { useToast } from "./ui/use-toast";
 import { useChat } from "@/contexts/ChatContext";
 
 interface MeetingChatProps {
@@ -13,6 +14,7 @@ interface MeetingChatProps {
 
 const MeetingChat = ({ onClose, embedded = false }: MeetingChatProps) => {
   const { user } = useUser();
+  const { toast } = useToast();
   const { useParticipants } = useCallStateHooks();
   const participants = useParticipants();
   const { messages, sendMessage } = useChat();
@@ -26,13 +28,23 @@ const MeetingChat = ({ onClose, embedded = false }: MeetingChatProps) => {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!inputMessage.trim() || !user) return;
+    const trimmed = inputMessage.trim();
+    if (!trimmed || !user) return;
+
+    if (trimmed.length > 2000) {
+      toast({
+        title: "Message too long",
+        description: "Messages are limited to 2,000 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     sendMessage({
       userId: user.id,
       userName: user.username || user.fullName || user.firstName || user.id,
       userImage: user.imageUrl,
-      text: inputMessage.trim(),
+      text: trimmed,
     });
 
     setInputMessage("");
@@ -175,6 +187,7 @@ const MeetingChat = ({ onClose, embedded = false }: MeetingChatProps) => {
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder="Type a message..."
+            maxLength={2000}
             className="flex-1 h-9 text-xs rounded-xl bg-[#061527]/90 border-[rgba(0,180,255,0.2)] text-white placeholder:text-neutral-500 focus-visible:ring-1 focus-visible:ring-cyan-400"
           />
           <Button

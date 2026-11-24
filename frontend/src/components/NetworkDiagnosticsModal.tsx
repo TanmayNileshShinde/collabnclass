@@ -140,14 +140,10 @@ export const NetworkDiagnosticsModal: React.FC<NetworkDiagnosticsModalProps> = (
       if (call.camera.state.status === "enabled") {
         await call.camera.disable();
         await call.camera.enable();
-      } else {
-        await call.camera.enable();
       }
 
       if (call.microphone.state.status === "enabled") {
         await call.microphone.disable();
-        await call.microphone.enable();
-      } else {
         await call.microphone.enable();
       }
 

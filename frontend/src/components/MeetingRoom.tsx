@@ -157,13 +157,14 @@ interface ClassroomEndedModalProps {
 
 const ClassroomEndedModal = ({ onLeave, endedByName }: ClassroomEndedModalProps) => {
   const [countdown, setCountdown] = useState(5);
+  const onLeaveRef = useRef(onLeave);
+  onLeaveRef.current = onLeave;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          onLeave();
           return 0;
         }
         return prev - 1;
@@ -171,7 +172,13 @@ const ClassroomEndedModal = ({ onLeave, endedByName }: ClassroomEndedModalProps)
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onLeave]);
+  }, []);
+
+  useEffect(() => {
+    if (countdown === 0) {
+      onLeaveRef.current();
+    }
+  }, [countdown]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020813]/90 backdrop-blur-md p-4">

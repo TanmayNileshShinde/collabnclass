@@ -369,13 +369,13 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
 
   const loadFolderChildren = async (item: GitHubFileItem) => {
     if (!repoInfo || item.type !== 'dir') return;
-    if (item.children && item.children.length > 0) return;
+    if (item.children !== undefined) return;
     try {
       const [owner, repo] = repoInfo.full_name.split('/');
       const children = await fetchRepoContents(owner, repo, item.path);
       const updateTree = (nodes: GitHubFileItem[]): GitHubFileItem[] =>
         nodes.map((node) => {
-          if (node.path === item.path) return { ...node, children };
+          if (node.path === item.path) return { ...node, children: children || [] };
           if (node.type === 'dir' && node.children) return { ...node, children: updateTree(node.children) };
           return node;
         });
@@ -510,7 +510,13 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       {repoDetails}
       <h4 className="font-medium text-xs text-neutral-300 mb-1.5 px-1">Files</h4>
       <div className="overflow-y-auto rounded-xl border border-[rgba(0,180,255,0.14)] bg-[#051120]/70 max-h-56 p-2 no-scrollbar">
-        {renderFileTree(fileTree)}
+        {fileTree.length > 0 ? (
+          renderFileTree(fileTree)
+        ) : (
+          <p className="text-xs text-neutral-400 p-2 text-center">
+            {isLoading ? "Loading repository contents..." : "No files found in root directory."}
+          </p>
+        )}
       </div>
       <FileViewer
         selectedFilePath={selectedFilePath}
