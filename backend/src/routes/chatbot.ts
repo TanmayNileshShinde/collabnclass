@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import dotenv from "dotenv";
 import express from "express";
 import Groq from "groq-sdk";
-import { verifyToken } from "@clerk/clerk-sdk-node";
+import { verifyAuth } from "./stream";
 
 dotenv.config();
 
@@ -66,32 +66,9 @@ const checkRateLimit = (key: string): { allowed: boolean; retryAfter?: number } 
 };
 
 // Chat endpoint with authentication & rate limiting
-router.post("/chatbot", async (req: Request, res: Response) => {
+router.post("/chatbot", verifyAuth, async (req: Request, res: Response) => {
   try {
-    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-    const authHeader = req.headers.authorization;
-    let userId: string | null = null;
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      if (clerkSecretKey && token) {
-        try {
-          const decoded = await verifyToken(token, { secretKey: clerkSecretKey });
-          if (decoded && decoded.sub) {
-            userId = decoded.sub;
-          }
-        } catch (authErr) {
-          return res.status(401).json({
-            error: "Invalid or expired authorization token. Please sign in again.",
-          });
-        }
-      }
-    } else if (clerkSecretKey) {
-      // clerk check
-      return res.status(401).json({
-        error: "Authentication required to use AI Study Assistant.",
-      });
-    }
+    const userId = req.userId || null;
 
     // apply limit
     const rateLimitKey = userId || req.ip || req.socket.remoteAddress || "anonymous";
@@ -153,7 +130,7 @@ router.post("/chatbot", async (req: Request, res: Response) => {
 
     Be concise, friendly, and helpful. Keep responses under 150 words when possible.`;
 
-    // groq api with graceful fallback
+    // groq api with graceful fallback for model availability or transient 5xx failures
     let completion;
     try {
       completion = await groq.chat.completions.create({
@@ -168,7 +145,13 @@ router.post("/chatbot", async (req: Request, res: Response) => {
         max_tokens: 500,
         temperature: 0.7,
       });
-    } catch (groqErr) {
+    } catch (groqErr: any) {
+      const status = groqErr?.status;
+      const shouldRetryFallback =
+        !status || status >= 500 || status === 404;
+      if (!shouldRetryFallback) {
+        throw groqErr;
+      }
       console.warn("Primary Groq model failed, trying fallback model:", groqErr);
       completion = await groq.chat.completions.create({
         model: "llama-3.1-8b-instant",

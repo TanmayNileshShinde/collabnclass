@@ -8,6 +8,7 @@ import { chatbotRoutes } from "./routes/chatbot";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 4000;
 
 const allowedOrigins = [
@@ -75,34 +76,46 @@ app.get("/health", (req, res) => {
 
 // Centralized JSON error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  if (err) {
-    console.error("Internal Server Error:", err);
-    return res.status(err.status || 500).json({
-      error: err.message || "An unexpected error occurred on the server.",
-    });
+  if (!err) {
+    return next();
   }
-  next();
+  if (res.headersSent) {
+    return next(err);
+  }
+  console.error("Internal Server Error:", err);
+  return res.status(err.status || 500).json({
+    error: err.message || "An unexpected error occurred on the server.",
+  });
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
-});
-
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-const shutdown = () => {
+const shutdown = (exitCode = 0) => {
   console.log("Shutting down server gracefully...");
+  const forceExitTimer = setTimeout(() => {
+    console.error("Forcing server exit after timeout.");
+    process.exit(exitCode || 1);
+  }, 5000);
+  forceExitTimer.unref();
+
   server.close(() => {
+    clearTimeout(forceExitTimer);
     console.log("Server closed.");
-    process.exit(0);
+    process.exit(exitCode);
   });
+  server.closeAllConnections?.();
 };
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  shutdown(1);
+});
+
+process.on("SIGTERM", () => shutdown(0));
+process.on("SIGINT", () => shutdown(0));

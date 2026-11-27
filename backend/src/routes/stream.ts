@@ -1,7 +1,8 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { verifyToken } from "@clerk/clerk-sdk-node";
 import { StreamClient } from "@stream-io/node-sdk";
-import axios from "axios";
+import crypto from "crypto";
+import axios, { AxiosError } from "axios";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -131,6 +132,19 @@ router.post("/token", verifyAuth, async (req: Request, res: Response) => {
   }
 });
 
+function createStreamServerJwt(apiSecret: string): string {
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const now = Math.floor(Date.now() / 1000);
+  const payload = Buffer.from(
+    JSON.stringify({ server: true, iat: now, exp: now + 300 })
+  ).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", apiSecret)
+    .update(`${header}.${payload}`)
+    .digest("base64url");
+  return `${header}.${payload}.${signature}`;
+}
+
 // delete recording
 router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: Response) => {
   try {
@@ -145,6 +159,15 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
       return res.status(400).json({ error: "Recording ID is required" });
     }
 
+    const client = getStreamClient();
+    const apiKey = process.env.STREAM_API_KEY?.trim();
+    const apiSecret = (process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET)?.trim();
+    if (!client || !apiKey || !apiSecret) {
+      return res.status(503).json({
+        error: "Stream API credentials are not configured on the server.",
+      });
+    }
+
     let decodedRecordingId = String(recordingId).trim();
     try {
       decodedRecordingId = decodeURIComponent(decodedRecordingId);
@@ -152,49 +175,64 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
       decodedRecordingId = String(recordingId).trim();
     }
 
-    // client delete
-    const client = getStreamClient();
-    if (client) {
-      try {
-        // delete recording
-        if (typeof (client as any).deleteRecording === "function") {
-          await (client as any).deleteRecording(decodedRecordingId);
-        } else if (typeof (client as any).video?.deleteRecording === "function") {
-          await (client as any).video.deleteRecording(decodedRecordingId);
-        } else if (process.env.STREAM_API_KEY && (process.env.STREAM_SECRET_KEY || process.env.STREAM_API_SECRET)) {
-          const serverToken = client.createToken("admin");
-          await axios.delete(
-            `https://video.stream-io-api.com/api/v2/video/recordings/${encodeURIComponent(decodedRecordingId)}`,
-            {
-              headers: {
-                "Stream-Auth-Type": "jwt",
-                Authorization: serverToken,
-                "api-key": process.env.STREAM_API_KEY,
-              },
-              params: {
-                api_key: process.env.STREAM_API_KEY,
-              },
-              timeout: 10000,
-            }
-          ).catch((err) => {
-            console.warn("Stream REST API delete warning:", err?.response?.data || err.message);
-          });
-        }
-      } catch (streamErr) {
-        console.warn("Stream recording deletion warning:", streamErr);
-      }
+    const body = (req.body || {}) as Record<string, unknown>;
+    const query = req.query as Record<string, unknown>;
+    const callType = String(body.callType || query.callType || "default").trim();
+    const callId = String(body.callId || query.callId || "").trim();
+    const sessionId = String(body.sessionId || query.sessionId || "").trim();
+    const filename = String(body.filename || query.filename || decodedRecordingId).trim();
+
+    if (!callId || !sessionId || !filename) {
+      return res.status(400).json({
+        error: "callId, sessionId, and filename are required to delete a Stream recording.",
+      });
     }
 
-    res.json({ 
+    // Verify caller owns or created the target call before deleting its recording
+    const callResp = await client.video.call(callType, callId).get();
+    const callData = callResp?.call;
+    const creatorId = callData?.created_by?.id;
+    const customCreatorId = (callData?.custom as Record<string, unknown> | undefined)?.creatorId;
+    if (creatorId !== userId && customCreatorId !== userId) {
+      return res.status(403).json({
+        error: "Only the classroom host can delete recordings for this session.",
+      });
+    }
+
+    const serverToken = createStreamServerJwt(apiSecret);
+    await axios.delete(
+      `https://video.stream-io-api.com/api/v2/video/call/${encodeURIComponent(callType)}/${encodeURIComponent(callId)}/${encodeURIComponent(sessionId)}/recordings/${encodeURIComponent(filename)}`,
+      {
+        headers: {
+          "Stream-Auth-Type": "jwt",
+          Authorization: serverToken,
+          "api-key": apiKey,
+        },
+        params: {
+          api_key: apiKey,
+        },
+        timeout: 10000,
+      }
+    );
+
+    res.json({
       message: "Recording deleted successfully",
-      recordingId: decodedRecordingId
+      recordingId: filename,
     });
   } catch (error) {
     console.error("Error deleting recording:", error);
+    const axiosErr = error as AxiosError<{ message?: string }>;
+    const upstreamStatus = axiosErr?.response?.status;
+    if (upstreamStatus && upstreamStatus >= 400 && upstreamStatus < 500) {
+      return res.status(upstreamStatus).json({
+        error: axiosErr.response?.data?.message || "Recording deletion rejected by Stream API",
+      });
+    }
     const errorMessage =
-      error instanceof Error ? error.message : "Failed to delete recording";
+      axiosErr?.response?.data?.message ||
+      (error instanceof Error ? error.message : "Failed to delete recording");
     res
-      .status(500)
+      .status(upstreamStatus && upstreamStatus >= 500 ? 502 : 500)
       .json({ error: `Failed to delete recording: ${errorMessage}` });
   }
 });

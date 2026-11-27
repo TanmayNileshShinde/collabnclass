@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       proxy: {
         '/api': {
-          target: env.VITE_BE_URL || 'http://localhost:4000',
+          target: env.VITE_PROXY_TARGET || env.VITE_BE_URL || 'http://localhost:4000',
           changeOrigin: true,
           secure: false,
         },
