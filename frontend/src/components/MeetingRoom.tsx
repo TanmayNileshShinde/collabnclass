@@ -71,6 +71,37 @@ import { ClassroomProvider, useClassroom } from "@/contexts/ClassroomContext";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
 
+const CallLayout = memo(({ layout }: { layout: CallLayoutType }) => {
+  switch (layout) {
+    case "grid":
+      return (
+        <PaginatedGridLayout
+          VideoPlaceholder={CustomVideoPlaceholder}
+          ParticipantViewUI={CustomParticipantViewUI}
+        />
+      );
+    case "speaker-right":
+      return (
+        <SpeakerLayout
+          participantsBarPosition="left"
+          VideoPlaceholder={CustomVideoPlaceholder}
+          ParticipantViewUISpotlight={CustomParticipantViewUI}
+          ParticipantViewUIBar={CustomParticipantViewUI}
+        />
+      );
+    default:
+      return (
+        <SpeakerLayout
+          participantsBarPosition="right"
+          VideoPlaceholder={CustomVideoPlaceholder}
+          ParticipantViewUISpotlight={CustomParticipantViewUI}
+          ParticipantViewUIBar={CustomParticipantViewUI}
+        />
+      );
+  }
+});
+CallLayout.displayName = "CallLayout";
+
 // Animated SVG wave layer with dual-theme smooth crossfade
 const OceanWaves = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -436,36 +467,24 @@ const MeetingRoomContent = () => {
     };
   }, [call]);
 
-  // track attendance
+  const callingStateRef = useRef(callingState);
+  callingStateRef.current = callingState;
+
+  // track local user attendance accurately per meeting/user session
   useEffect(() => {
-    if (!call || !user || callingState !== CallingState.JOINED) return;
+    const meetingId = call?.id;
+    const currentUserId = user?.id;
+    const userName = user?.fullName || user?.username || "Unknown User";
+    if (!meetingId || !currentUserId || callingState !== CallingState.JOINED) return;
 
-    const meetingId = call.id;
-    const userId = user.id;
-    const userName = user.fullName || user.username || "Unknown User";
-
-    if (callingState === CallingState.JOINED && meetingId && userId) {
-      AttendanceService.recordJoin(meetingId, userId, userName).catch(
-        (error) => {
-          console.error("Failed to record attendance join:", error);
-        }
-      );
-    }
-
-    const handleLeave = (isUnload = false) => {
-      if (meetingId && userId) {
-        if (isUnload) {
-          AttendanceService.recordLeaveBeacon(meetingId, userId);
-        } else {
-          AttendanceService.recordLeave(meetingId, userId).catch((error) => {
-            console.error("Failed to record attendance leave:", error);
-          });
-        }
+    AttendanceService.recordJoin(meetingId, currentUserId, userName).catch(
+      (error) => {
+        console.error("Failed to record attendance join:", error);
       }
-    };
+    );
 
     const handleBeforeUnload = () => {
-      handleLeave(true);
+      AttendanceService.recordLeaveBeacon(meetingId, currentUserId);
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -474,48 +493,99 @@ const MeetingRoomContent = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handleBeforeUnload);
-      handleLeave(false);
+      AttendanceService.recordLeave(meetingId, currentUserId).catch((error) => {
+        console.error("Failed to record attendance leave:", error);
+      });
     };
-  }, [call, user, callingState]);
+  }, [call?.id, user?.id, callingState]);
 
-  // participant events
+  const handleToggleDock = (tab: SideDockTab) => {
+    if (isDockOpen && activeDockTab === tab) {
+      setIsDockOpen(false);
+    } else {
+      setActiveDockTab(tab);
+      setIsDockOpen(true);
+    }
+  };
+
+  // Global In-Meeting Keyboard Shortcuts (kept before conditional early returns to satisfy Rules of Hooks)
+  const shortcutActionsRef = useRef({
+    handleToggleMic,
+    handleToggleCamera,
+    toggleHandRaise,
+    handleToggleDock,
+    showWhiteboard,
+    isDockOpen,
+    canInteract: callingState === CallingState.JOINED,
+  });
+  shortcutActionsRef.current = {
+    handleToggleMic,
+    handleToggleCamera,
+    toggleHandRaise,
+    handleToggleDock,
+    showWhiteboard,
+    isDockOpen,
+    canInteract: callingState === CallingState.JOINED && !callEndedAt && !call?.state.endedAt && !isEndedByHost,
+  };
+
   useEffect(() => {
-    if (!call) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const actions = shortcutActionsRef.current;
+      if (!actions.canInteract) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("[contenteditable='true']") ||
+          target.closest("input") ||
+          target.closest("textarea"))
+      ) {
+        return;
+      }
 
-    const handleParticipantJoined = (event: any) => {
-      const participant = event.participant;
-      const pUserId = participant?.userId || participant?.user?.id;
-      const pName = participant?.name || participant?.user?.name || pUserId || "Participant";
-      if (pUserId) {
-        AttendanceService.recordJoin(
-          call.id,
-          pUserId,
-          pName
-        ).catch((error) => {
-          console.error("Failed to record participant join:", error);
-        });
+      if (e.key === "Escape") {
+        setShowShortcutsModal(false);
+        setIsDiagnosticsOpen(false);
+        if (actions.showWhiteboard) setShowWhiteboard(false);
+        if (actions.isDockOpen) setIsDockOpen(false);
+        return;
+      }
+
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const key = e.key.toLowerCase();
+      if (key === "m") {
+        e.preventDefault();
+        actions.handleToggleMic();
+      } else if (key === "v") {
+        e.preventDefault();
+        actions.handleToggleCamera();
+      } else if (key === "h") {
+        e.preventDefault();
+        actions.toggleHandRaise();
+      } else if (key === "b") {
+        e.preventDefault();
+        setShowWhiteboard((prev) => !prev);
+      } else if (key === "c") {
+        e.preventDefault();
+        actions.handleToggleDock("chat");
+      } else if (key === "p") {
+        e.preventDefault();
+        actions.handleToggleDock("participants");
+      } else if (key === "d") {
+        e.preventDefault();
+        setIsDiagnosticsOpen((prev) => !prev);
+      } else if (e.key === "?" || (e.shiftKey && key === "/")) {
+        e.preventDefault();
+        setShowShortcutsModal((prev) => !prev);
       }
     };
 
-    const handleParticipantLeft = (event: any) => {
-      const participant = event.participant;
-      if (participant && participant.userId) {
-        AttendanceService.recordLeave(call.id, participant.userId).catch(
-          (error) => {
-            console.error("Failed to record participant leave:", error);
-          }
-        );
-      }
-    };
-
-    call.on("participantJoined", handleParticipantJoined);
-    call.on("participantLeft", handleParticipantLeft);
-
-    return () => {
-      call.off("participantJoined", handleParticipantJoined);
-      call.off("participantLeft", handleParticipantLeft);
-    };
-  }, [call]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const isCallEnded =
     Boolean(callEndedAt) ||
@@ -543,15 +613,6 @@ const MeetingRoomContent = () => {
     (localParticipant ? 1 : 0) +
     participants.filter((p) => p.userId !== localParticipant?.userId).length;
 
-  const handleToggleDock = (tab: SideDockTab) => {
-    if (isDockOpen && activeDockTab === tab) {
-      setIsDockOpen(false);
-    } else {
-      setActiveDockTab(tab);
-      setIsDockOpen(true);
-    }
-  };
-
   const copyMeetingCode = () => {
     if (meetingCode) {
       navigator.clipboard.writeText(meetingCode);
@@ -563,102 +624,6 @@ const MeetingRoomContent = () => {
     if (meetingLink) {
       navigator.clipboard.writeText(meetingLink);
       toast({ title: "Meeting Link Copied", description: "URL ready to share." });
-    }
-  };
-
-
-  // Global In-Meeting Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable ||
-          target.closest("[contenteditable='true']") ||
-          target.closest("input") ||
-          target.closest("textarea"))
-      ) {
-        return;
-      }
-
-      if (e.key === "Escape") {
-        setShowShortcutsModal(false);
-        setIsDiagnosticsOpen(false);
-        if (showWhiteboard) setShowWhiteboard(false);
-        if (isDockOpen) setIsDockOpen(false);
-        return;
-      }
-
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const key = e.key.toLowerCase();
-      if (key === "m") {
-        e.preventDefault();
-        handleToggleMic();
-      } else if (key === "v") {
-        e.preventDefault();
-        handleToggleCamera();
-      } else if (key === "h") {
-        e.preventDefault();
-        toggleHandRaise();
-      } else if (key === "b") {
-        e.preventDefault();
-        setShowWhiteboard((prev) => !prev);
-      } else if (key === "c") {
-        e.preventDefault();
-        handleToggleDock("chat");
-      } else if (key === "p") {
-        e.preventDefault();
-        handleToggleDock("participants");
-      } else if (key === "d") {
-        e.preventDefault();
-        setIsDiagnosticsOpen((prev) => !prev);
-      } else if (e.key === "?" || (e.shiftKey && key === "/")) {
-        e.preventDefault();
-        setShowShortcutsModal((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    handleToggleMic,
-    handleToggleCamera,
-    toggleHandRaise,
-    handleToggleDock,
-    showWhiteboard,
-    isDockOpen,
-  ]);
-
-  const CallLayout = () => {
-    switch (layout) {
-      case "grid":
-        return (
-          <PaginatedGridLayout
-            VideoPlaceholder={CustomVideoPlaceholder}
-            ParticipantViewUI={CustomParticipantViewUI}
-          />
-        );
-      case "speaker-right":
-        return (
-          <SpeakerLayout
-            participantsBarPosition="left"
-            VideoPlaceholder={CustomVideoPlaceholder}
-            ParticipantViewUISpotlight={CustomParticipantViewUI}
-            ParticipantViewUIBar={CustomParticipantViewUI}
-          />
-        );
-      default:
-        return (
-          <SpeakerLayout
-            participantsBarPosition="right"
-            VideoPlaceholder={CustomVideoPlaceholder}
-            ParticipantViewUISpotlight={CustomParticipantViewUI}
-            ParticipantViewUIBar={CustomParticipantViewUI}
-          />
-        );
     }
   };
 
@@ -929,11 +894,11 @@ const MeetingRoomContent = () => {
         <div
           className={cn(
             "flex size-full items-center justify-center transition-all duration-300",
-            isDockOpen ? "max-w-[calc(100%-420px)]" : "max-w-7xl"
+            isDockOpen ? "xl:max-w-[calc(100%-420px)]" : "max-w-7xl"
           )}
         >
           <div className="w-full h-full flex items-center justify-center">
-            <CallLayout />
+            <CallLayout layout={layout} />
           </div>
         </div>
       </div>
@@ -947,18 +912,18 @@ const MeetingRoomContent = () => {
         participantCount={totalParticipantsCount}
         unreadCount={messages.length}
       >
-        {activeDockTab === "chat" && (
+        <div className={cn("h-full", activeDockTab !== "chat" && "hidden")}>
           <MeetingChat embedded onClose={() => setIsDockOpen(false)} />
-        )}
-        {activeDockTab === "participants" && (
+        </div>
+        <div className={cn("h-full", activeDockTab !== "participants" && "hidden")}>
           <CustomParticipantsList embedded onClose={() => setIsDockOpen(false)} />
-        )}
-        {activeDockTab === "ai" && (
+        </div>
+        <div className={cn("h-full", activeDockTab !== "ai" && "hidden")}>
           <Chatbot embedded onClose={() => setIsDockOpen(false)} />
-        )}
-        {activeDockTab === "github" && (
+        </div>
+        <div className={cn("h-full", activeDockTab !== "github" && "hidden")}>
           <GithubRepoImporter embedded onClose={() => setIsDockOpen(false)} />
-        )}
+        </div>
       </MeetingSideDock>
 
       {/* Fullscreen Whiteboard Overlay (Lazy Loaded) */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useCall } from '@stream-io/video-react-sdk';
 import { useAuth } from '@clerk/clerk-react';
 import { Github, X, Folder, File, ChevronRight, ChevronDown, Link, Loader2, Download, FileCode } from 'lucide-react';
@@ -203,8 +203,12 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
   const [fileViewMode, setFileViewMode] = useState<'code' | 'image' | 'binary'>('code');
   const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
+  const loadedRepoRef = useRef<string | null>(null);
+  const fileRequestIdRef = useRef(0);
 
-  const isHost = call?.state.createdBy?.id === userId;
+  const isHost =
+    call?.state.createdBy?.id === userId ||
+    call?.state.custom?.creatorId === userId;
 
   const parseGitHubUrl = (url: string) => {
     const match = url.trim().match(/github\.com\/([^/]+)\/([^/?#]+)/);
@@ -226,7 +230,10 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       if (!token) {
         throw new Error('Authentication token is missing. Please sign in again.');
       }
-      const url = `${beurl}/api/github/repo/${owner}/${repo}/contents${path ? '/' + path : ''}`;
+      const encodedPath = path
+        ? '/' + path.split('/').filter(Boolean).map(encodeURIComponent).join('/')
+        : '';
+      const url = `${beurl}/api/github/repo/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents${encodedPath}`;
       const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -289,8 +296,10 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
     });
 
     if (imported.fileTree && Array.isArray(imported.fileTree) && imported.fileTree.length > 0) {
+      loadedRepoRef.current = targetFullName;
       setFileTree(imported.fileTree);
-    } else if (targetOwner && targetRepo && (!repoInfo || repoInfo.full_name !== targetFullName)) {
+    } else if (targetOwner && targetRepo && loadedRepoRef.current !== targetFullName) {
+      loadedRepoRef.current = targetFullName;
       setIsLoading(true);
       fetchRepoContents(targetOwner, targetRepo)
         .then((contents) => {
@@ -299,6 +308,9 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
           }
         })
         .catch((err) => {
+          if (isSubscribed) {
+            loadedRepoRef.current = null;
+          }
           console.error('Failed to lazily load repo contents:', err);
         })
         .finally(() => {
@@ -311,7 +323,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
     return () => {
       isSubscribed = false;
     };
-  }, [call?.state.custom?.importedRepo, fetchRepoContents, repoInfo]);
+  }, [call?.state.custom?.importedRepo, fetchRepoContents]);
 
   const handleImportRepo = async () => {
     if (!repoUrl.trim()) return;
@@ -387,6 +399,7 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
 
   const handleFileClick = useCallback(async (item: GitHubFileItem) => {
     if (!item.download_url) return;
+    const reqId = ++fileRequestIdRef.current;
     try {
       setIsFileLoading(true);
       setSelectedFilePath(item.path);
@@ -415,17 +428,17 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       }
       if (!response.ok) throw new Error('Failed to fetch file content');
       const text = await response.text();
+      if (fileRequestIdRef.current !== reqId) return;
 
-      // size guard
-      if (text.length > 500000) {
-        const truncated = text.substring(0, 500000) + '\n\n// --- File truncated for performance (exceeds 500KB) ---';
-        const html = await highlightCode(truncated, item.path);
-        setHighlightedHtml(html);
-      } else {
-        const html = await highlightCode(text, item.path);
-        setHighlightedHtml(html);
-      }
+      const sourceText =
+        text.length > 500000
+          ? text.substring(0, 500000) + '\n\n// --- File truncated for performance (exceeds 500KB) ---'
+          : text;
+      const html = await highlightCode(sourceText, item.path);
+      if (fileRequestIdRef.current !== reqId) return;
+      setHighlightedHtml(html);
     } catch (error: unknown) {
+      if (fileRequestIdRef.current !== reqId) return;
       const errMsg = error instanceof Error ? error.message : 'Unable to load file content';
       toast({
         title: 'Failed to load file',
@@ -435,7 +448,9 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
         variant: 'destructive',
       });
     } finally {
-      setIsFileLoading(false);
+      if (fileRequestIdRef.current === reqId) {
+        setIsFileLoading(false);
+      }
     }
   }, [toast]);
 
@@ -480,8 +495,14 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
           </div>
           {item.type === 'dir' && expandedFolders.has(item.path) && (
             <div>
-              {item.children && item.children.length > 0 ? (
-                renderFileTree(item.children, level + 1)
+              {Array.isArray(item.children) ? (
+                item.children.filter((c) => !c.name.startsWith('.')).length > 0 ? (
+                  renderFileTree(item.children, level + 1)
+                ) : (
+                  <div className="text-[11px] text-neutral-500 ml-5 py-1 italic">
+                    Empty folder
+                  </div>
+                )
               ) : (
                 <div className="flex items-center gap-1 text-[11px] text-neutral-400 ml-5 py-1">
                   <Loader2 className="w-3 h-3 animate-spin text-cyan-400" />

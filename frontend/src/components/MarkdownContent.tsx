@@ -188,17 +188,32 @@ const renderInline = (text: string): React.ReactNode[] => {
     } else if (raw.startsWith("[") && raw.includes("](") && raw.endsWith(")")) {
       const linkMatch = raw.match(/\[([^\]]+)\]\(([^)]+)\)/);
       if (linkMatch) {
-        elements.push(
-          <a
-            key={key}
-            href={linkMatch[2]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors"
-          >
-            {linkMatch[1]}
-          </a>
-        );
+        const href = linkMatch[2].trim();
+        let isSafeUrl = false;
+        try {
+          const parsed = new URL(href, "https://example.invalid");
+          isSafeUrl =
+            parsed.protocol === "http:" ||
+            parsed.protocol === "https:" ||
+            parsed.protocol === "mailto:";
+        } catch {
+          isSafeUrl = false;
+        }
+        if (isSafeUrl) {
+          elements.push(
+            <a
+              key={key}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors"
+            >
+              {linkMatch[1]}
+            </a>
+          );
+        } else {
+          elements.push(linkMatch[1]);
+        }
       } else {
         elements.push(raw);
       }

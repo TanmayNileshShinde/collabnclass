@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { X, Download, Upload, Trash2, FileImage, FileCode, Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
 import { Excalidraw, exportToBlob, exportToSvg } from "@excalidraw/excalidraw";
@@ -106,9 +106,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
   // broadcast changes
   const handleChange = useCallback(
     (elements: any, appState: any) => {
-      // ignore echo
       if (isRemoteUpdateRef.current) {
-        isRemoteUpdateRef.current = false;
         return;
       }
 
@@ -122,6 +120,10 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
         syncTimeoutRef.current = setTimeout(async () => {
           try {
+            const payloadStr = JSON.stringify(elements);
+            if (payloadStr.length > 22000) {
+              return;
+            }
             await call.sendCustomEvent({
               type: "whiteboard-elements-update",
               elements,
@@ -141,7 +143,15 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
   // stream events
   useEffect(() => {
-    if (!call) return;
+    if (!call || !excalidrawAPI) return;
+
+    const applyRemoteScene = (sceneUpdate: { elements: any; appState?: any }) => {
+      isRemoteUpdateRef.current = true;
+      excalidrawAPI.updateScene(sceneUpdate);
+      setTimeout(() => {
+        isRemoteUpdateRef.current = false;
+      }, 0);
+    };
 
     const handleCustomEvent = (event: any) => {
       if (!event) return;
@@ -150,13 +160,10 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
       // peer update
       if (customData.type === "whiteboard-elements-update") {
-        if (customData.senderId && customData.senderId === user?.id) return; // Ignore own echoes
+        if (customData.senderId && customData.senderId === user?.id) return;
 
-        if (excalidrawAPI && Array.isArray(customData.elements)) {
-          isRemoteUpdateRef.current = true;
-          excalidrawAPI.updateScene({
-            elements: customData.elements,
-          });
+        if (Array.isArray(customData.elements)) {
+          applyRemoteScene({ elements: customData.elements });
           debouncedSaveToStorage(customData.elements, excalidrawAPI.getAppState());
           setLastSyncedBy(customData.senderName || "Peer");
           triggerSyncIndicator();
@@ -166,7 +173,6 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       // state request
       if (customData.type === "whiteboard-request-state") {
         if (customData.requesterId && customData.requesterId === user?.id) return;
-        if (!excalidrawAPI) return;
 
         const currentElements = excalidrawAPI.getSceneElements();
         if (currentElements && currentElements.length > 0) {
@@ -184,11 +190,8 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       // state response
       if (customData.type === "whiteboard-elements-response") {
         if (customData.targetId && customData.targetId !== user?.id) return;
-        if (excalidrawAPI && Array.isArray(customData.elements)) {
-          isRemoteUpdateRef.current = true;
-          excalidrawAPI.updateScene({
-            elements: customData.elements,
-          });
+        if (Array.isArray(customData.elements)) {
+          applyRemoteScene({ elements: customData.elements });
           debouncedSaveToStorage(customData.elements, excalidrawAPI.getAppState());
           setLastSyncedBy(customData.senderName || "Peer");
           triggerSyncIndicator();
@@ -198,25 +201,19 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       // clear event
       if (customData.type === "whiteboard-clear") {
         if (customData.senderId && customData.senderId === user?.id) return;
-        if (excalidrawAPI) {
-          isRemoteUpdateRef.current = true;
-          excalidrawAPI.updateScene({
-            elements: [],
-            appState: {},
-          });
-          localStorage.removeItem(storageKey);
-          setLastSyncedBy(customData.senderName || "Peer");
-          toast({
-            title: "Whiteboard Cleared",
-            description: `${customData.senderName || "A participant"} cleared the shared canvas.`,
-          });
-        }
+        applyRemoteScene({ elements: [], appState: {} });
+        localStorage.removeItem(storageKey);
+        setLastSyncedBy(customData.senderName || "Peer");
+        toast({
+          title: "Whiteboard Cleared",
+          description: `${customData.senderName || "A participant"} cleared the shared canvas.`,
+        });
       }
     };
 
     (call as any).on("custom", handleCustomEvent);
 
-    // fetch canvas
+    // fetch canvas now that excalidrawAPI is mounted and ready
     call.sendCustomEvent({
       type: "whiteboard-request-state",
       requesterId: user?.id,
@@ -232,7 +229,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         clearTimeout(syncIndicatorTimeoutRef.current);
       }
     };
-  }, [call, user?.id, user?.fullName, user?.firstName, excalidrawAPI, saveToStorage, storageKey, toast]);
+  }, [call, user?.id, user?.fullName, user?.firstName, excalidrawAPI, debouncedSaveToStorage, storageKey, toast, triggerSyncIndicator]);
 
   // export png
   const handleExportPNG = useCallback(async () => {
@@ -263,7 +260,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       link.href = url;
       link.download = `collabclass-whiteboard-${Date.now()}.png`;
       link.click();
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       toast({ title: "Whiteboard exported as PNG!" });
     } catch (err) {
       console.error("Export PNG failed:", err);
@@ -303,7 +300,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       link.href = url;
       link.download = `collabclass-whiteboard-${Date.now()}.svg`;
       link.click();
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       toast({ title: "Whiteboard exported as SVG vector!" });
     } catch (err) {
       console.error("Export SVG failed:", err);
@@ -349,13 +346,20 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
 
         try {
           const data = JSON.parse(e.target.result as string);
+          const elements = Array.isArray(data) ? data : data?.elements;
+          if (!Array.isArray(elements)) {
+            throw new Error("Invalid elements array in whiteboard JSON");
+          }
           if (excalidrawAPI) {
-            const elements = data.elements || data;
-            const appState = data.appState || {};
+            const appState = (!Array.isArray(data) && data?.appState) || {};
+            isRemoteUpdateRef.current = true;
             excalidrawAPI.updateScene({
               elements,
               appState,
             });
+            setTimeout(() => {
+              isRemoteUpdateRef.current = false;
+            }, 0);
             saveToStorage(elements, appState);
 
             // broadcast import
@@ -536,15 +540,18 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
           excalidrawAPI={(api: any) => setExcalidrawAPI(api)}
           onChange={handleChange}
           theme="dark"
-          initialData={{
-            ...loadFromStorage(),
-            appState: {
-              viewBackgroundColor: "#020813",
-              currentItemStrokeColor: "#00e5ff",
-              currentItemBackgroundColor: "transparent",
-              ...loadFromStorage().appState,
-            },
-          }}
+          initialData={useMemo(() => {
+            const saved = loadFromStorage();
+            return {
+              ...saved,
+              appState: {
+                viewBackgroundColor: "#020813",
+                currentItemStrokeColor: "#00e5ff",
+                currentItemBackgroundColor: "transparent",
+                ...saved.appState,
+              },
+            };
+          }, [loadFromStorage])}
         />
       </div>
     </div>

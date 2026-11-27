@@ -314,7 +314,7 @@ const Chatbot = ({ embedded = false }: ChatbotProps) => {
   return (
     <div
       className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${
-        isMinimized ? "w-80 h-12" : "w-88 h-[460px]"
+        isMinimized ? "w-80 h-12" : "w-[352px] h-[460px]"
       }`}
     >
       <div className="rounded-2xl border border-[rgba(0,180,255,0.25)] bg-[#020813]/95 backdrop-blur-xl shadow-2xl flex flex-col h-full overflow-hidden">

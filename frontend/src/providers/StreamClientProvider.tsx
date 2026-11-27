@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { StreamVideoClient, StreamVideo } from "@stream-io/video-react-sdk";
 import { useUser, useAuth } from "@clerk/clerk-react";
 
@@ -11,13 +11,22 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
   const [videoClient, setVideoClient] = useState<StreamVideoClient>();
   const { user, isLoaded } = useUser();
   const { getToken } = useAuth();
+  const userRef = useRef(user);
+  const getTokenRef = useRef(getToken);
+  userRef.current = user;
+  getTokenRef.current = getToken;
+
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!API_KEY || !isLoaded || !user) return;
+    if (!API_KEY || !isLoaded || !userId) return;
+
+    let cancelled = false;
+    const currentUser = userRef.current;
 
     const tokenProvider = async () => {
       try {
-        const authToken = await getToken();
+        const authToken = await getTokenRef.current();
 
         if (!authToken) {
           throw new Error("No authentication token available");
@@ -49,26 +58,25 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // display name
     const getUserDisplayName = () => {
-      if (user?.firstName && user?.lastName) {
-        return `${user.firstName} ${user.lastName}`;
+      if (currentUser?.firstName && currentUser?.lastName) {
+        return `${currentUser.firstName} ${currentUser.lastName}`;
       }
-      if (user?.firstName) return user.firstName;
-      if (user?.lastName) return user.lastName;
-      if (user?.username) return user.username;
-      if (user?.emailAddresses?.[0]?.emailAddress) {
-        return user.emailAddresses[0].emailAddress.split('@')[0];
+      if (currentUser?.firstName) return currentUser.firstName;
+      if (currentUser?.lastName) return currentUser.lastName;
+      if (currentUser?.username) return currentUser.username;
+      if (currentUser?.emailAddresses?.[0]?.emailAddress) {
+        return currentUser.emailAddresses[0].emailAddress.split('@')[0];
       }
-      return user?.id || 'User';
+      return userId;
     };
 
     const client = new StreamVideoClient({
       apiKey: API_KEY,
       user: {
-        id: user?.id,
+        id: userId,
         name: getUserDisplayName(),
-        image: user?.imageUrl,
+        image: currentUser?.imageUrl,
       },
       tokenProvider,
       options: {
@@ -76,15 +84,18 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
       },
     });
 
-    setVideoClient(client);
+    if (!cancelled) {
+      setVideoClient(client);
+    }
 
     return () => {
+      cancelled = true;
       client.disconnectUser().catch((err) => {
         console.error("Error disconnecting Stream client:", err);
       });
       setVideoClient(undefined);
     };
-  }, [user, isLoaded, getToken]);
+  }, [isLoaded, userId]);
 
   if (!API_KEY) {
     return (

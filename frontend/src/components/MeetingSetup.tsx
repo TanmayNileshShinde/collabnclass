@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import {
   VideoPreview,
   useCall,
@@ -32,6 +32,178 @@ import Alert from "./Alert";
 import { useToast } from "./ui/use-toast";
 import { formatMeetingCode } from "@/lib/meetingUtils";
 import { cn } from "@/lib/utils";
+
+const SetupClock = memo(() => {
+  const [time, setTime] = useState(() =>
+    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+  );
+  const dateStr = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTime(
+        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      );
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return <span>{time} • {dateStr}</span>;
+});
+SetupClock.displayName = "SetupClock";
+
+const SetupMicAudioMeter = memo(({ isMicMuted, micStream }: { isMicMuted: boolean; micStream?: MediaStream }) => {
+  const [audioLevel, setAudioLevel] = useState(0);
+
+  useEffect(() => {
+    if (isMicMuted || !micStream) {
+      setAudioLevel(0);
+      return;
+    }
+
+    let audioContext: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let source: MediaStreamAudioSourceNode | null = null;
+    let animationFrameId = 0;
+
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      audioContext = new AudioCtx();
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 64;
+      analyser.smoothingTimeConstant = 0.5;
+
+      source = audioContext.createMediaStreamSource(micStream);
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const checkVolume = () => {
+        if (!analyser) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / dataArray.length;
+        const normalized = Math.min(100, Math.round((avg / 128) * 100));
+        setAudioLevel(normalized);
+        animationFrameId = requestAnimationFrame(checkVolume);
+      };
+
+      checkVolume();
+    } catch (err) {
+      console.warn("Audio meter setup skipped:", err);
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (source) source.disconnect();
+      if (audioContext && audioContext.state !== "closed") {
+        audioContext.close().catch(() => {});
+      }
+    };
+  }, [isMicMuted, micStream]);
+
+  return (
+    <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-black/40 border border-white/10 mt-1">
+      <span className="text-[10px] text-neutral-400 font-mono shrink-0">Mic Level:</span>
+      <div className="flex-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden relative">
+        <div
+          className={cn(
+            "h-full transition-all duration-75 rounded-full",
+            isMicMuted
+              ? "bg-rose-500/50 w-0"
+              : audioLevel > 60
+              ? "bg-gradient-to-r from-emerald-400 to-amber-400"
+              : "bg-gradient-to-r from-cyan-400 to-emerald-400"
+          )}
+          style={{ width: `${isMicMuted ? 0 : audioLevel}%` }}
+        />
+      </div>
+      <span className="text-[10px] font-mono text-cyan-300 shrink-0 w-8 text-right">
+        {isMicMuted ? "MUTED" : `${audioLevel}%`}
+      </span>
+    </div>
+  );
+});
+SetupMicAudioMeter.displayName = "SetupMicAudioMeter";
+
+const CustomDisabledVideoPreviewCard = memo(({
+  userImage,
+  userInitial,
+  onEnableCamera,
+}: {
+  userImage?: string;
+  userInitial: string;
+  onEnableCamera: () => void;
+}) => (
+  <div className="relative flex flex-col items-center justify-center w-full h-full p-4 text-center select-none dark:bg-[#030b17]/95 bg-slate-900/95 overflow-hidden">
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-cyan-500/20 animate-ping opacity-30" />
+      <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-full border border-sky-500/10" />
+    </div>
+
+    <div className="relative z-10 flex flex-col items-center gap-2">
+      <div className="relative">
+        {userImage ? (
+          <img
+            src={userImage}
+            alt="User"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-cyan-400/50 shadow-[0_0_20px_rgba(0,180,255,0.35)]"
+          />
+        ) : (
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center bg-cyan-500/15 border-2 border-cyan-400/50 text-cyan-300 font-bold text-xl font-syne shadow-[0_0_20px_rgba(0,180,255,0.35)]">
+            {userInitial}
+          </div>
+        )}
+        <span className="absolute -bottom-1 -right-1 p-1 rounded-md bg-rose-500/25 border border-rose-500/50 text-rose-400 shadow-sm">
+          <VideoOff size={11} />
+        </span>
+      </div>
+
+      <div>
+        <h4 className="text-xs sm:text-sm font-bold font-syne text-white tracking-tight">
+          Camera is Off
+        </h4>
+        <p className="text-[10px] text-neutral-400 max-w-xs mt-0.5">
+          Turn on camera to preview your feed.
+        </p>
+      </div>
+
+      <button
+        onClick={onEnableCamera}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 transition-all active:scale-95 shadow-[0_0_10px_rgba(0,180,255,0.2)]"
+      >
+        <Camera size={12} />
+        <span>Turn On Camera</span>
+      </button>
+    </div>
+  </div>
+));
+CustomDisabledVideoPreviewCard.displayName = "CustomDisabledVideoPreviewCard";
+
+const CustomNoCameraPreviewCard = memo(() => (
+  <div className="relative flex flex-col items-center justify-center w-full h-full p-4 text-center select-none dark:bg-[#030b17]/95 bg-slate-900/95">
+    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+      <VideoOff size={18} />
+    </div>
+    <h4 className="text-xs sm:text-sm font-bold font-syne text-white">
+      No Camera Detected
+    </h4>
+    <p className="text-[10px] text-neutral-400 max-w-xs mt-0.5">
+      You can still participate with audio and screen sharing.
+    </p>
+  </div>
+));
+CustomNoCameraPreviewCard.displayName = "CustomNoCameraPreviewCard";
 
 // Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home & Upcoming)
 const OceanWaves = () => (
@@ -179,81 +351,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
   const [isMicCamToggled, setIsMicCamToggled] = useState(false);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
-
-  // live clock
-  const now = new Date();
-  const [time, setTime] = useState(
-    now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-  );
-  const dateStr = new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(now);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTime(
-        new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-      );
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  // Live mic audio level visualizer
-  useEffect(() => {
-    if (isMicMuted || !micStream) {
-      setAudioLevel(0);
-      return;
-    }
-
-    let audioContext: AudioContext | null = null;
-    let analyser: AnalyserNode | null = null;
-    let source: MediaStreamAudioSourceNode | null = null;
-    let animationFrameId: number;
-
-    try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      audioContext = new AudioCtx();
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.5;
-
-      source = audioContext.createMediaStreamSource(micStream);
-      source.connect(analyser);
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      const checkVolume = () => {
-        if (!analyser) return;
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
-        }
-        const avg = sum / dataArray.length;
-        const normalized = Math.min(100, Math.round((avg / 128) * 100));
-        setAudioLevel(normalized);
-        animationFrameId = requestAnimationFrame(checkVolume);
-      };
-
-      checkVolume();
-    } catch (err) {
-      console.warn("Audio meter setup skipped:", err);
-    }
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (source) source.disconnect();
-      if (audioContext && audioContext.state !== "closed") {
-        audioContext.close().catch(() => {});
-      }
-    };
-  }, [isMicMuted, micStream]);
 
   if (!call) {
     throw new Error("useStreamCall must be used within a StreamCall component.");
@@ -262,13 +360,21 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
   // media toggle
   useEffect(() => {
     if (isMicCamToggled) {
-      call.camera.disable();
-      call.microphone.disable();
+      call.camera.disable().catch(console.warn);
+      call.microphone.disable().catch(console.warn);
     } else {
-      call.camera.enable();
-      call.microphone.enable();
+      call.camera.enable().catch(console.warn);
+      call.microphone.enable().catch(console.warn);
     }
   }, [isMicCamToggled, call.camera, call.microphone]);
+
+  const handleExitSetup = async () => {
+    await Promise.allSettled([
+      call.camera.disable(),
+      call.microphone.disable(),
+    ]);
+    navigate("/");
+  };
 
   const toggleCamera = async () => {
     try {
@@ -363,67 +469,12 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
     );
   }
 
-  // camera disabled
-  const CustomDisabledVideoPreview = () => (
-    <div className="relative flex flex-col items-center justify-center w-full h-full p-4 text-center select-none dark:bg-[#030b17]/95 bg-slate-900/95 overflow-hidden">
-      {/* Ambient Pulsing Radar Rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-cyan-500/20 animate-ping opacity-30" />
-        <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-full border border-sky-500/10" />
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center gap-2">
-        {/* User Avatar with Glowing Cyber Ring */}
-        <div className="relative">
-          {user?.imageUrl ? (
-            <img
-              src={user.imageUrl}
-              alt="User"
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-cyan-400/50 shadow-[0_0_20px_rgba(0,180,255,0.35)]"
-            />
-          ) : (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center bg-cyan-500/15 border-2 border-cyan-400/50 text-cyan-300 font-bold text-xl font-syne shadow-[0_0_20px_rgba(0,180,255,0.35)]">
-              {user?.firstName?.charAt(0) || "U"}
-            </div>
-          )}
-          <span className="absolute -bottom-1 -right-1 p-1 rounded-md bg-rose-500/25 border border-rose-500/50 text-rose-400 shadow-sm">
-            <VideoOff size={11} />
-          </span>
-        </div>
-
-        <div>
-          <h4 className="text-xs sm:text-sm font-bold font-syne text-white tracking-tight">
-            Camera is Off
-          </h4>
-          <p className="text-[10px] text-neutral-400 max-w-xs mt-0.5">
-            Turn on camera to preview your feed.
-          </p>
-        </div>
-
-        <button
-          onClick={toggleCamera}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 transition-all active:scale-95 shadow-[0_0_10px_rgba(0,180,255,0.2)]"
-        >
-          <Camera size={12} />
-          <span>Turn On Camera</span>
-        </button>
-      </div>
-    </div>
-  );
-
-  // camera missing
-  const CustomNoCameraPreview = () => (
-    <div className="relative flex flex-col items-center justify-center w-full h-full p-4 text-center select-none dark:bg-[#030b17]/95 bg-slate-900/95">
-      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-        <VideoOff size={18} />
-      </div>
-      <h4 className="text-xs sm:text-sm font-bold font-syne text-white">
-        No Camera Detected
-      </h4>
-      <p className="text-[10px] text-neutral-400 max-w-xs mt-0.5">
-        You can still participate with audio and screen sharing.
-      </p>
-    </div>
+  const renderDisabledVideoPreview = () => (
+    <CustomDisabledVideoPreviewCard
+      userImage={user?.imageUrl}
+      userInitial={user?.firstName?.charAt(0) || "U"}
+      onEnableCamera={toggleCamera}
+    />
   );
 
   return (
@@ -483,7 +534,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       <header className="relative z-10 w-full max-w-7xl 2xl:max-w-[1560px] mx-auto flex items-center justify-between gap-3 h-10 sm:h-11 shrink-0 px-2 sm:px-4">
         {/* Left: Back / Exit */}
         <button
-          onClick={() => navigate("/")}
+          onClick={handleExitSetup}
           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold dark:bg-[#040e1c]/80 bg-white/80 backdrop-blur-xl border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 dark:text-neutral-300 text-slate-700 hover:dark:text-white hover:text-slate-900 transition-all active:scale-95 shadow-sm"
         >
           <ChevronLeft size={13} />
@@ -503,7 +554,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg dark:bg-[#030b17]/80 bg-white/80 border dark:border-[rgba(0,180,255,0.2)] border-sky-200/80 text-[11px] font-mono dark:text-cyan-300 text-slate-800 shadow-sm backdrop-blur-xl">
             <Clock size={11} className="text-cyan-400 animate-pulse" />
-            <span>{time} • {dateStr}</span>
+            <SetupClock />
           </div>
 
           <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold dark:bg-cyan-500/10 bg-sky-50 border dark:border-cyan-500/25 border-sky-200 dark:text-cyan-300 text-sky-700">
@@ -563,8 +614,8 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
               <div className="meeting-setup-viewport w-full h-full flex items-center justify-center">
                 <VideoPreview
                   mirror
-                  DisabledVideoPreview={CustomDisabledVideoPreview}
-                  NoCameraPreview={CustomNoCameraPreview}
+                  DisabledVideoPreview={renderDisabledVideoPreview}
+                  NoCameraPreview={CustomNoCameraPreviewCard}
                 />
               </div>
 
@@ -681,25 +732,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                     </div>
 
                       {/* Live Mic Audio Level Meter */}
-                      <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-black/40 border border-white/10 mt-1">
-                        <span className="text-[10px] text-neutral-400 font-mono shrink-0">Mic Level:</span>
-                        <div className="flex-1 h-1.5 rounded-full bg-neutral-800 overflow-hidden relative">
-                          <div
-                            className={cn(
-                              "h-full transition-all duration-75 rounded-full",
-                              isMicMuted
-                                ? "bg-rose-500/50 w-0"
-                                : audioLevel > 60
-                                ? "bg-gradient-to-r from-emerald-400 to-amber-400"
-                                : "bg-gradient-to-r from-cyan-400 to-emerald-400"
-                            )}
-                            style={{ width: `${isMicMuted ? 0 : audioLevel}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-mono text-cyan-300 shrink-0 w-8 text-right">
-                          {isMicMuted ? "MUTED" : `${audioLevel}%`}
-                        </span>
-                      </div>
+                      <SetupMicAudioMeter isMicMuted={isMicMuted} micStream={micStream} />
 
                     {/* Speaker Selector */}
                     <div className="flex flex-col gap-0.5">
@@ -865,7 +898,7 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
                 </button>
 
                 <button
-                  onClick={() => navigate("/")}
+                  onClick={handleExitSetup}
                   disabled={isJoining}
                   className="w-full inline-flex items-center justify-center gap-1 py-1 px-2 rounded-lg text-[11px] font-medium dark:text-neutral-400 text-slate-600 hover:dark:text-white hover:text-slate-900 transition-colors"
                 >

@@ -20,6 +20,14 @@ interface CallListProps {
   activeFilter?: UpcomingFilterType;
   onFilterChange?: (filter: UpcomingFilterType) => void;
   hideFilterHeader?: boolean;
+  onResetSearch?: () => void;
+  onRecordingsCountChange?: (count: number) => void;
+}
+
+interface RecordingEntry {
+  recording: CallRecording;
+  callType: string;
+  callId: string;
 }
 
 const CallList = ({
@@ -28,6 +36,8 @@ const CallList = ({
   activeFilter,
   onFilterChange,
   hideFilterHeader = false,
+  onResetSearch,
+  onRecordingsCountChange,
 }: CallListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,7 +45,8 @@ const CallList = ({
   const { liveCalls, upcomingCalls, endedCalls, callRecordings, isLoading } =
     useGetCalls();
 
-  const [recordings, setRecordings] = useState<CallRecording[]>([]);
+  const [recordingEntries, setRecordingEntries] = useState<RecordingEntry[]>([]);
+  const [isRecordingsLoading, setIsRecordingsLoading] = useState(type === "recordings");
   const [internalFilter, setInternalFilter] = useState<UpcomingFilterType>("all");
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
@@ -63,7 +74,7 @@ const CallList = ({
       case "ended":
         return endedCalls;
       case "recordings":
-        return recordings;
+        return recordingEntries.map((e) => e.recording);
       case "upcoming": {
         if (currentFilter === "live") return liveCalls;
         if (currentFilter === "scheduled") return upcomingCalls;
@@ -73,7 +84,7 @@ const CallList = ({
       default:
         return [];
     }
-  }, [type, endedCalls, recordings, currentFilter, liveCalls, upcomingCalls]);
+  }, [type, endedCalls, recordingEntries, currentFilter, liveCalls, upcomingCalls]);
 
   // search filter
   const calls = useMemo(() => {
@@ -115,6 +126,13 @@ const CallList = ({
       );
       if (!confirmed) return;
 
+      const entry = recordingEntries.find(
+        (e) =>
+          (recording.url && e.recording.url === recording.url) ||
+          (recording.filename && e.recording.filename === recording.filename) ||
+          e.recording === recording
+      );
+
       const recordingId = recording.filename || recording.url;
       const token = await getToken();
 
@@ -132,6 +150,13 @@ const CallList = ({
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({
+            callType: entry?.callType || "default",
+            callId: entry?.callId || "",
+            sessionId:
+              (recording as CallRecording & { session_id?: string }).session_id || "",
+            filename: recording.filename || "",
+          }),
         }
       );
 
@@ -140,13 +165,16 @@ const CallList = ({
         throw new Error(errorData.error || "Failed to delete recording");
       }
 
-      setRecordings((prev) =>
-        prev.filter((r) => {
+      setRecordingEntries((prev) => {
+        const next = prev.filter((e) => {
+          const r = e.recording;
           if (recording.url && r.url) return r.url !== recording.url;
           if (recording.filename && r.filename) return r.filename !== recording.filename;
           return r !== recording;
-        })
-      );
+        });
+        onRecordingsCountChange?.(next.length);
+        return next;
+      });
 
       toast({
         title: "Recording deleted",
@@ -169,24 +197,41 @@ const CallList = ({
     let isMounted = true;
 
     const fetchRecordings = async () => {
+      if (isLoading) return;
+      setIsRecordingsLoading(true);
       try {
+        const callsToQuery = callRecordings ?? [];
         const settledCalls = await Promise.allSettled(
-          callRecordings?.map((meeting) => meeting.queryRecordings()) ?? []
+          callsToQuery.map(async (meeting) => ({
+            meeting,
+            res: await meeting.queryRecordings(),
+          }))
         );
 
-        const recs: CallRecording[] = [];
+        const entries: RecordingEntry[] = [];
         for (const res of settledCalls) {
-          if (res.status === "fulfilled" && Array.isArray(res.value?.recordings)) {
-            recs.push(...res.value.recordings);
+          if (res.status === "fulfilled" && Array.isArray(res.value.res?.recordings)) {
+            for (const rec of res.value.res.recordings) {
+              entries.push({
+                recording: rec,
+                callType: res.value.meeting.type || "default",
+                callId: res.value.meeting.id,
+              });
+            }
           }
         }
 
         if (isMounted) {
-          setRecordings(recs);
+          setRecordingEntries(entries);
+          onRecordingsCountChange?.(entries.length);
         }
       } catch (err) {
         if (isMounted) {
           console.error("Failed to query recordings:", err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsRecordingsLoading(false);
         }
       }
     };
@@ -198,9 +243,9 @@ const CallList = ({
     return () => {
       isMounted = false;
     };
-  }, [type, callRecordings]);
+  }, [type, callRecordings, isLoading, onRecordingsCountChange]);
 
-  if (isLoading) return <Loader />;
+  if (isLoading || (type === "recordings" && isRecordingsLoading)) return <Loader />;
 
   const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
   const totalUpcomingCount = (liveCalls?.length ?? 0) + (upcomingCalls?.length ?? 0);
@@ -393,7 +438,7 @@ const CallList = ({
 
               {searchQuery && (
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => (onResetSearch ? onResetSearch() : navigate(0))}
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium dark:bg-white/[0.04] bg-slate-100 hover:bg-slate-200 dark:hover:bg-white/10 border dark:border-white/10 border-slate-200 dark:text-neutral-300 text-slate-700 transition-all"
                 >
                   <RefreshCw size={13} />

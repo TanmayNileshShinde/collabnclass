@@ -1,6 +1,5 @@
 import { useState } from "react";
 import CallList from "@/components/CallList";
-import { useGetCalls } from "@/hooks/useGetCalls";
 import { Video, Film, Search, X } from "lucide-react";
 import LiveClockBadge from "@/components/LiveClockBadge";
 
@@ -105,10 +104,8 @@ const Scanlines = () => (
 );
 
 const Recordings = () => {
-  const { callRecordings } = useGetCalls();
   const [searchQuery, setSearchQuery] = useState("");
-
-  const totalRecordingsCount = callRecordings?.length ?? 0;
+  const [totalRecordingsCount, setTotalRecordingsCount] = useState(0);
 
   return (
     <div className="relative min-h-[calc(100vh-80px)] w-full overflow-hidden transition-colors duration-300 dark:bg-[#020813] bg-slate-50 flex flex-col gap-8 pb-16">
@@ -221,7 +218,12 @@ const Recordings = () => {
 
         {/* Recordings List */}
         <section className="relative w-full">
-          <CallList type="recordings" searchQuery={searchQuery} />
+          <CallList
+            type="recordings"
+            searchQuery={searchQuery}
+            onResetSearch={() => setSearchQuery("")}
+            onRecordingsCountChange={setTotalRecordingsCount}
+          />
         </section>
       </div>
     </div>

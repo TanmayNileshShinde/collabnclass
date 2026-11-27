@@ -18,6 +18,9 @@ export const getBackendUrl = (): string => {
     ) {
       return `http://${host}:4000`;
     }
+    throw new Error(
+      "VITE_BE_URL is not configured for production deployment."
+    );
   }
   return "";
 };

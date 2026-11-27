@@ -93,7 +93,7 @@ const HomeCard = ({
       <div className="flex items-center justify-between relative z-10 w-full">
         <div
           className={cn(
-            'size-13 rounded-2xl flex items-center justify-center border transition-all duration-300 group-hover:scale-105 shadow-md flex-shrink-0',
+            'w-[52px] h-[52px] rounded-2xl flex items-center justify-center border transition-all duration-300 group-hover:scale-105 shadow-md flex-shrink-0',
             config.iconBg
           )}
         >

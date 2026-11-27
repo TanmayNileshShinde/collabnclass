@@ -64,7 +64,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function RootRedirect() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center dark:bg-[#020813] bg-slate-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent" />
+      </div>
+    );
+  }
   return isSignedIn ? <Navigate to="/home" replace /> : <Navigate to="/landing" replace />;
 }
 
@@ -81,8 +88,8 @@ function App() {
           <Route path="/" element={<RootRedirect />} />
 
           <Route path="/landing" element={<Landing />} />
-          <Route path="/sign-in" element={<SignIn />} />
-          <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/sign-in/*" element={<SignIn />} />
+          <Route path="/sign-up/*" element={<SignUp />} />
 
           <Route
             path="/home"

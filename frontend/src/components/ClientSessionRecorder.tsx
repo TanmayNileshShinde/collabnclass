@@ -18,7 +18,9 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const displayStreamRef = useRef<MediaStream | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+  const isStartingRef = useRef(false);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -27,6 +29,10 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (displayStreamRef.current) {
+      displayStreamRef.current.getTracks().forEach((track) => track.stop());
+      displayStreamRef.current = null;
     }
     if (micStreamRef.current) {
       micStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -49,6 +55,8 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
   }, [cleanupStream]);
 
   const startRecording = async () => {
+    if (isStartingRef.current || status !== "idle") return;
+    isStartingRef.current = true;
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
         toast({
@@ -66,6 +74,7 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
         } as MediaTrackConstraints,
         audio: true,
       });
+      displayStreamRef.current = displayStream;
 
       // Optionally blend user microphone audio
       let combinedStream = displayStream;
@@ -119,7 +128,9 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
       };
 
       recorder.onstop = () => {
-        const completeBlob = new Blob(chunksRef.current, { type: "video/webm" });
+        const completeBlob = new Blob(chunksRef.current, {
+          type: recorder.mimeType || mimeType,
+        });
         setRecordedBlob(completeBlob);
         setStatus("idle");
         cleanupStream();
@@ -154,12 +165,15 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
         description: "Capturing lecture screen and synchronized audio locally.",
       });
     } catch (err) {
+      cleanupStream();
       console.error("Failed to start screen recording:", err);
       toast({
         title: "Could not start recording",
         description: err instanceof Error ? err.message : "User cancelled screen share permission.",
         variant: "destructive",
       });
+    } finally {
+      isStartingRef.current = false;
     }
   };
 

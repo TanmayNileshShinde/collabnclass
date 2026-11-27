@@ -4,8 +4,7 @@ const SignUp = () => {
   return (
     <main className="flex h-screen w-full items-center justify-center">
       <ClerkSignUp 
-        redirectUrl="/"
-        afterSignUpUrl="/"
+        fallbackRedirectUrl="/home"
       />
     </main>
   );

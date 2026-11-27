@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X, ChevronLeft } from 'lucide-react';
+import { Menu, X, ChevronLeft, LogOut } from 'lucide-react';
 import { useClerk } from '@clerk/clerk-react';
 import { sidebarLinks } from '@/constants';
 import { cn } from '@/lib/utils';
@@ -20,7 +20,11 @@ const Sidebar = () => {
     <>
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="fixed left-4 top-24 z-50 max-sm:hidden lg:hidden p-3 rounded-full transition-all duration-300 dark:bg-[rgba(0,20,50,0.85)] bg-white/95 border dark:border-cyan-500/20 border-cyan-500/25 dark:shadow-[0_0_16px_rgba(0,100,200,0.2)] shadow-[0_2px_10px_rgba(0,80,180,0.1)] dark:text-cyan-200 text-sky-600"
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className={cn(
+          "fixed top-24 z-50 max-sm:hidden lg:hidden p-3 rounded-full transition-all duration-300 dark:bg-[rgba(0,20,50,0.85)] bg-white/95 border dark:border-cyan-500/20 border-cyan-500/25 dark:shadow-[0_0_16px_rgba(0,100,200,0.2)] shadow-[0_2px_10px_rgba(0,80,180,0.1)] dark:text-cyan-200 text-sky-600",
+          isCollapsed ? "left-24" : "left-[272px]"
+        )}
       >
         {isCollapsed ? <Menu size={20} /> : <X size={20} />}
       </button>
@@ -144,7 +148,8 @@ const Sidebar = () => {
               (e.currentTarget as HTMLButtonElement).style.background = theme === 'dark' ? 'rgba(220,38,38,0.15)' : 'rgba(220,38,38,0.08)';
             }}
           >
-            {!isCollapsed && "Logout"}
+            <LogOut size={16} className="shrink-0" />
+            {!isCollapsed && <span>Logout</span>}
           </button>
 
           {/* Collapse Button */}

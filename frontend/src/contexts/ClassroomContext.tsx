@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   ReactNode,
 } from "react";
 import { useCall } from "@stream-io/video-react-sdk";
@@ -77,6 +78,8 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
   const [raisedHands, setRaisedHands] = useState<Map<string, RaisedHandInfo>>(
     new Map()
   );
+  const raisedHandsRef = useRef(raisedHands);
+  raisedHandsRef.current = raisedHands;
 
   // host check
   const isHost = useMemo(() => {
@@ -85,6 +88,9 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     const customCreatorId = call.state.custom?.creatorId;
     return callCreatorId === user.id || customCreatorId === user.id;
   }, [call, user]);
+  const isHostRef = useRef(isHost);
+  isHostRef.current = isHost;
+  const userId = user?.id;
 
   const isHandRaised = useMemo(() => {
     if (!user) return false;
@@ -110,21 +116,21 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
       if (!eventType) return;
 
       if (eventType === "classroom-hand-raise") {
-        const { userId, userName, userImage, isRaised, raisedAt } = customData;
-        if (!userId) return;
+        const { userId: eventUserId, userName, userImage, isRaised, raisedAt } = customData;
+        if (!eventUserId) return;
 
         setRaisedHands((prev) => {
           const next = new Map(prev);
           if (isRaised) {
-            next.set(userId, {
-              userId,
+            next.set(eventUserId, {
+              userId: eventUserId,
               userName: userName || "Participant",
               userImage,
               raisedAt: raisedAt || Date.now(),
             });
 
             // hand notification
-            if (userId !== user?.id) {
+            if (eventUserId !== userId) {
               playHandRaiseChime();
               toast({
                 title: "✋ Hand Raised",
@@ -132,14 +138,14 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
               });
             }
           } else {
-            next.delete(userId);
+            next.delete(eventUserId);
           }
           return next;
         });
       } else if (eventType === "classroom-lower-all-hands") {
         setRaisedHands(new Map());
       } else if (eventType === "classroom-mute-all") {
-        if (!isHost) {
+        if (!isHostRef.current) {
           toast({
             title: "🔇 Microphones Muted",
             description: "The host has muted all participants.",
@@ -147,8 +153,8 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
         }
       } else if (eventType === "classroom-request-state") {
         // sync state
-        if (user && raisedHands.has(user.id)) {
-          const myInfo = raisedHands.get(user.id)!;
+        if (userId && raisedHandsRef.current.has(userId)) {
+          const myInfo = raisedHandsRef.current.get(userId)!;
           call
             .sendCustomEvent({
               type: "classroom-hand-raise",
@@ -167,7 +173,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
 
     // prune hands
     const handleParticipantLeft = (event: any) => {
-      const leftId = event?.participant?.userId;
+      const leftId = event?.participant?.userId || event?.participant?.user?.id;
       if (leftId) {
         setRaisedHands((prev) => {
           if (prev.has(leftId)) {
@@ -184,11 +190,11 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
     call.on("participantLeft", handleParticipantLeft);
 
     // request hands
-    if (user?.id) {
+    if (userId) {
       call
         .sendCustomEvent({
           type: "classroom-request-state",
-          custom: { requesterId: user.id },
+          custom: { requesterId: userId },
         })
         .catch(() => {});
     }
@@ -197,7 +203,7 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
       call.off("custom", handleCustomEvent);
       call.off("participantLeft", handleParticipantLeft);
     };
-  }, [call, isHost, user, raisedHands, toast]);
+  }, [call, userId, toast]);
 
   // toggle hand
   const toggleHandRaise = useCallback(async () => {

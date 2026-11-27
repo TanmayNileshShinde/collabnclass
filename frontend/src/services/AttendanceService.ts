@@ -19,20 +19,20 @@ class AttendanceService {
       }
 
       // active session
-      const { data: existingRecord, error: checkError } = await supabase
+      const { data: existingRecords, error: checkError } = await supabase
         .from('meeting_attendance')
         .select('*')
         .eq('meeting_id', meetingId)
         .eq('user_id', userId)
         .is('left_at', null)
-        .maybeSingle();
+        .limit(1);
 
       if (checkError) {
         console.warn('Error checking existing attendance session:', checkError);
       }
 
-      if (existingRecord) {
-        return existingRecord;
+      if (existingRecords && existingRecords.length > 0) {
+        return existingRecords[0];
       }
 
       const { data, error } = await supabase
@@ -72,15 +72,14 @@ class AttendanceService {
         .eq('meeting_id', meetingId)
         .eq('user_id', userId)
         .is('left_at', null)
-        .select()
-        .maybeSingle();
+        .select();
 
       if (error) {
         console.error('Error recording leave:', error);
         return null;
       }
 
-      return data;
+      return data?.[0] ?? null;
     } catch (error) {
       console.error('Failed to record leave:', error);
       return null;
@@ -104,7 +103,7 @@ class AttendanceService {
         left_at: new Date().toISOString(),
       });
 
-      // keepalive fetch
+      // keepalive fetch (Supabase REST rejects unauthenticated sendBeacon PATCH payloads)
       if (typeof fetch === 'function') {
         fetch(endpoint, {
           method: 'PATCH',
@@ -117,13 +116,6 @@ class AttendanceService {
           body: payload,
           keepalive: true,
         }).catch(() => {});
-        return true;
-      }
-
-      // sendBeacon fallback
-      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-        const blob = new Blob([payload], { type: 'application/json' });
-        navigator.sendBeacon(endpoint, blob);
         return true;
       }
 

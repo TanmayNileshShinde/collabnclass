@@ -14,14 +14,14 @@ import { Button } from "./ui/button";
 import { generateMeetingCode } from "@/lib/meetingUtils";
 import "react-datepicker/dist/react-datepicker.css";
 
-const initialValues = {
+const createInitialValues = () => ({
   dateTime: new Date(),
   description: "",
   heading: "",
   subheading: "",
   link: "",
   meetingCode: "",
-};
+});
 
 // Ocean Cyberpunk input/textarea classes
 const oceanInput =
@@ -39,14 +39,15 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
   const [meetingState, setMeetingState] = useState<
     "isScheduleMeeting" | "isJoiningMeeting" | "isInstantMeeting" | undefined
   >(undefined);
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState(createInitialValues);
   const [callDetail, setCallDetail] = useState<Call>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const client = useStreamVideoClient();
   const { user } = useUser();
   const { toast } = useToast();
 
   const resetForm = () => {
-    setValues(initialValues);
+    setValues(createInitialValues());
     setMeetingState(undefined);
   };
 
@@ -123,7 +124,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
   };
 
   const createMeeting = async () => {
-    if (!client || !user) return;
+    if (!client || !user || isSubmitting) return;
+    setIsSubmitting(true);
     const isInstantMeeting = meetingState === "isInstantMeeting";
     const isScheduledMeeting = meetingState === "isScheduleMeeting";
     try {
@@ -167,6 +169,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
         description: error instanceof Error ? error.message : "Failed to create meeting",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -245,6 +249,7 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
             <Textarea
               className={oceanInput}
               placeholder="Outline topics covered, prerequisites, or required readings..."
+              value={values.description}
               onChange={(e) => setValues({ ...values, description: e.target.value })}
             />
           </div>
@@ -325,7 +330,7 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
 
       <MeetingModal
         isOpen={meetingState === "isJoiningMeeting"}
-        onClose={() => { setMeetingState(undefined); setValues({ ...initialValues }); }}
+        onClose={() => { setMeetingState(undefined); setValues(createInitialValues()); }}
         title="Join Classroom"
         className="text-center"
         buttonText="Connect to Classroom"
@@ -378,7 +383,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
         onClose={resetForm}
         title="Launch Instant Classroom"
         className="text-center"
-        buttonText="Start Session Now"
+        buttonText={isSubmitting ? "Starting..." : "Start Session Now"}
+        isLoading={isSubmitting}
         handleClick={createMeeting}
       >
         <div className="flex flex-col gap-4">
@@ -405,6 +411,7 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
             <Textarea
               className={oceanInput}
               placeholder="Add key goals or announcements for participants..."
+              value={values.description}
               onChange={(e) => setValues({ ...values, description: e.target.value })}
             />
           </div>

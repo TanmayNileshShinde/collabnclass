@@ -15,6 +15,7 @@ interface MeetingModalProps {
   image?: string;
   buttonClassName?: string;
   buttonIcon?: string;
+  isLoading?: boolean;
 }
 
 const MeetingModal = ({
@@ -27,6 +28,7 @@ const MeetingModal = ({
   buttonText,
   image,
   buttonIcon,
+  isLoading = false,
 }: MeetingModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -93,7 +95,8 @@ const MeetingModal = ({
 
           <Button
             onClick={handleClick}
-            className="font-semibold px-8 py-4 text-lg rounded-xl transition-all duration-300 border-0 relative overflow-hidden group"
+            disabled={isLoading}
+            className="font-semibold px-8 py-4 text-lg rounded-xl transition-all duration-300 border-0 relative overflow-hidden group disabled:opacity-60 disabled:cursor-not-allowed"
             style={{
               background: "linear-gradient(135deg, rgba(0,80,160,0.9) 0%, rgba(0,120,200,0.9) 50%, rgba(0,160,220,0.9) 100%)",
               border: "1px solid rgba(0,200,255,0.3)",
