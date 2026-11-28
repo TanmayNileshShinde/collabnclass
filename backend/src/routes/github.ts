@@ -1,7 +1,7 @@
-import { Router, Request, Response, NextFunction } from "express";
-import { verifyToken } from "@clerk/clerk-sdk-node";
+import { Router, Request, Response } from "express";
 import axios, { AxiosError } from "axios";
 import dotenv from "dotenv";
+import { verifyAuth } from "./stream";
 
 dotenv.config();
 
@@ -107,48 +107,6 @@ const isValidRepoIdentifier = (str: string): boolean => {
   return typeof str === "string" && /^[a-zA-Z0-9_.-]+$/.test(str);
 };
 
-// clerk middleware
-const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res
-        .status(401)
-        .json({ error: "Missing or invalid authorization header" });
-    }
-
-    const token = authHeader.substring(7);
-    if (!token) {
-      return res.status(401).json({ error: "Token is missing" });
-    }
-
-    const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecretKey) {
-      return res.status(503).json({
-        error: "CLERK_SECRET_KEY is missing on the server. Please set it in backend .env",
-      });
-    }
-
-    const decoded = await verifyToken(token, {
-      secretKey: clerkSecretKey,
-    });
-
-    if (!decoded || !decoded.sub) {
-      return res.status(401).json({ error: "Invalid token: missing user ID" });
-    }
-
-    req.userId = decoded.sub;
-    next();
-  } catch (error) {
-    console.error("Auth verification error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Authentication failed";
-    return res
-      .status(401)
-      .json({ error: `Authentication failed: ${errorMessage}` });
-  }
-};
-
 // repo contents
 router.get(
   "/repo/:owner/:repo/contents/*",
@@ -176,7 +134,8 @@ router.get(
       }
       const normalizedPath = segments.join("/");
       const encodedPath = segments.map((seg) => encodeURIComponent(seg)).join("/");
-      const cacheKey = `contents:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}:${normalizedPath}`;
+      const scope = req.userId || "anon";
+      const cacheKey = `${scope}:contents:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}:${normalizedPath}`;
 
       const cached = getCached(cacheKey);
       if (cached) {
@@ -216,7 +175,8 @@ router.get("/repo/:owner/:repo/contents", verifyAuth, async (req: Request, res: 
     if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
     }
-    const cacheKey = `contents:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}:root`;
+    const scope = req.userId || "anon";
+    const cacheKey = `${scope}:contents:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}:root`;
 
     const cached = getCached(cacheKey);
     if (cached) {
@@ -253,7 +213,8 @@ router.get("/repo/:owner/:repo", verifyAuth, async (req: Request, res: Response)
     if (!isValidRepoIdentifier(owner) || !isValidRepoIdentifier(cleanRepo)) {
       return res.status(400).json({ error: "Invalid repository owner or name." });
     }
-    const cacheKey = `info:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}`;
+    const scope = req.userId || "anon";
+    const cacheKey = `${scope}:info:${owner.toLowerCase()}:${cleanRepo.toLowerCase()}`;
 
     const cached = getCached(cacheKey);
     if (cached) {

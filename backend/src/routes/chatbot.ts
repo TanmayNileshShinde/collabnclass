@@ -182,13 +182,11 @@ router.post("/chatbot", verifyAuth, async (req: Request, res: Response) => {
       res.setHeader("Retry-After", "30");
       return res.status(429).json({
         error: "AI service rate limit exceeded. Please wait a moment before asking again.",
-        details: error instanceof Error ? error.message : "Rate limit exceeded",
       });
     }
 
     res.status(500).json({
       error: "Failed to process message",
-      details: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });

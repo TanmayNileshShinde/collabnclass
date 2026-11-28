@@ -28,7 +28,7 @@ app.use(
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
-        /^https:\/\/(collabclass|collabnclass).*\.vercel\.app$/.test(origin) ||
+        /^https:\/\/(collabclass|collabnclass)(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin) ||
         /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin)
       ) {
         callback(null, true);
@@ -83,8 +83,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     return next(err);
   }
   console.error("Internal Server Error:", err);
-  return res.status(err.status || 500).json({
-    error: err.message || "An unexpected error occurred on the server.",
+  const status = typeof err.status === "number" ? err.status : 500;
+  return res.status(status).json({
+    error:
+      status < 500 && err.message
+        ? err.message
+        : "An unexpected error occurred on the server.",
   });
 });
 

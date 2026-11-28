@@ -63,7 +63,7 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Fallback STUN/TURN servers for restricted networks (Issue #2)
-router.get("/ice-servers", async (req: Request, res: Response) => {
+router.get("/ice-servers", verifyAuth, async (req: Request, res: Response) => {
   try {
     const defaultStunServers = [
       { urls: "stun:stun.l.google.com:19302" },
@@ -179,12 +179,12 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
     const query = req.query as Record<string, unknown>;
     const callType = String(body.callType || query.callType || "default").trim();
     const callId = String(body.callId || query.callId || "").trim();
-    const sessionId = String(body.sessionId || query.sessionId || "").trim();
+    let sessionId = String(body.sessionId || query.sessionId || "").trim();
     const filename = String(body.filename || query.filename || decodedRecordingId).trim();
 
-    if (!callId || !sessionId || !filename) {
+    if (!callId || !filename) {
       return res.status(400).json({
-        error: "callId, sessionId, and filename are required to delete a Stream recording.",
+        error: "callId and filename are required to delete a Stream recording.",
       });
     }
 
@@ -200,8 +200,48 @@ router.delete("/recordings/:recordingId", verifyAuth, async (req: Request, res: 
     }
 
     const serverToken = createStreamServerJwt(apiSecret);
+
+    // Client SDK CallRecording objects often omit session_id; resolve it via Stream REST API
+    if (!sessionId) {
+      try {
+        const listResp = await axios.get<{
+          recordings?: Array<{ session_id?: string; filename?: string; url?: string }>;
+        }>(
+          `https://video.stream-io-api.com/video/call/${encodeURIComponent(callType)}/${encodeURIComponent(callId)}/recordings`,
+          {
+            headers: {
+              "Stream-Auth-Type": "jwt",
+              Authorization: serverToken,
+              "api-key": apiKey,
+            },
+            params: { api_key: apiKey },
+            timeout: 10000,
+          }
+        );
+        const match = listResp.data?.recordings?.find(
+          (r) =>
+            r.filename === filename ||
+            (typeof r.url === "string" && r.url.includes(filename))
+        );
+        if (match?.session_id) {
+          sessionId = match.session_id;
+        }
+      } catch (lookupErr) {
+        console.warn("Unable to resolve recording session_id from list:", lookupErr);
+      }
+      if (!sessionId && callData?.current_session_id) {
+        sessionId = String(callData.current_session_id);
+      }
+    }
+
+    if (!sessionId) {
+      return res.status(400).json({
+        error: "Could not determine sessionId for the requested recording.",
+      });
+    }
+
     await axios.delete(
-      `https://video.stream-io-api.com/api/v2/video/call/${encodeURIComponent(callType)}/${encodeURIComponent(callId)}/${encodeURIComponent(sessionId)}/recordings/${encodeURIComponent(filename)}`,
+      `https://video.stream-io-api.com/video/call/${encodeURIComponent(callType)}/${encodeURIComponent(callId)}/${encodeURIComponent(sessionId)}/recordings/${encodeURIComponent(filename)}`,
       {
         headers: {
           "Stream-Auth-Type": "jwt",
