@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { StreamCall, StreamTheme } from '@stream-io/video-react-sdk';
-import { useParams } from 'react-router-dom';
+import { CallingState, StreamCall, StreamTheme } from '@stream-io/video-react-sdk';
+import { useParams, useSearchParams } from 'react-router-dom';
 import Loader from '@/components/Loader';
 
 import { useGetCallById } from '@/hooks/useGetCallById';
@@ -12,9 +12,27 @@ import MeetingRoom from '@/components/MeetingRoom';
 
 const Meeting = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const { isLoaded, user } = useUser();
-  const { call, isCallLoading } = useGetCallById(id!);
+  const isPersonalRoom = searchParams.get('personal') === 'true';
+  const personalHeading = `${user?.fullName || user?.username || 'Host'}'s Personal Classroom`;
+  const { call, isCallLoading } = useGetCallById(id!, {
+    autoCreatePersonal: Boolean(isPersonalRoom && user?.id && id === user.id),
+    personalHeading,
+  });
   const [isSetupComplete, setIsSetupComplete] = useState(false);
+
+  // Stop media devices and leave call cleanly when navigating away (e.g. Browser Back)
+  useEffect(() => {
+    if (!call) return;
+    return () => {
+      call.camera.disable().catch(() => {});
+      call.microphone.disable().catch(() => {});
+      if (call.state.callingState === CallingState.JOINED) {
+        call.leave().catch(() => {});
+      }
+    };
+  }, [call]);
 
   if (!isLoaded || isCallLoading) return <Loader />;
 

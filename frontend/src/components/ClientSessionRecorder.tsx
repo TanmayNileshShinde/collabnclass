@@ -112,13 +112,20 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
       streamRef.current = combinedStream;
       chunksRef.current = [];
 
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-        ? "video/webm;codecs=vp9,opus"
-        : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
-        ? "video/webm;codecs=vp8,opus"
-        : "video/webm";
+      const mimeTypeCandidates = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+        "video/mp4",
+      ];
+      const supportedMimeType =
+        typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function"
+          ? mimeTypeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) || ""
+          : "";
 
-      const recorder = new MediaRecorder(combinedStream, { mimeType });
+      const recorder = supportedMimeType
+        ? new MediaRecorder(combinedStream, { mimeType: supportedMimeType })
+        : new MediaRecorder(combinedStream);
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (event) => {
@@ -129,7 +136,7 @@ export const ClientSessionRecorder: React.FC<ClientSessionRecorderProps> = ({
 
       recorder.onstop = () => {
         const completeBlob = new Blob(chunksRef.current, {
-          type: recorder.mimeType || mimeType,
+          type: recorder.mimeType || supportedMimeType || "video/webm",
         });
         setRecordedBlob(completeBlob);
         setStatus("idle");

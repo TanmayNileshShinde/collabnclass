@@ -128,20 +128,20 @@ export const ClassroomProvider: React.FC<{ children: ReactNode }> = ({
               userImage,
               raisedAt: raisedAt || Date.now(),
             });
-
-            // hand notification
-            if (eventUserId !== userId) {
-              playHandRaiseChime();
-              toast({
-                title: "✋ Hand Raised",
-                description: `${userName || "A student"} raised their hand.`,
-              });
-            }
           } else {
             next.delete(eventUserId);
           }
           return next;
         });
+
+        // hand notification (kept outside state updater to avoid StrictMode double-fire)
+        if (isRaised && eventUserId !== userId) {
+          playHandRaiseChime();
+          toast({
+            title: "✋ Hand Raised",
+            description: `${userName || "A student"} raised their hand.`,
+          });
+        }
       } else if (eventType === "classroom-lower-all-hands") {
         setRaisedHands(new Map());
       } else if (eventType === "classroom-mute-all") {

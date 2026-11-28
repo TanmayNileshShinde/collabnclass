@@ -260,9 +260,12 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
       if (!token) {
         throw new Error('Authentication token is missing. Please sign in again.');
       }
-      const response = await fetch(`${beurl}/api/github/repo/${owner}/${repo}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${beurl}/api/github/repo/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || errorData.details || errorData.message || 'Failed to fetch repository information');
@@ -338,6 +341,11 @@ const GithubRepoImporter = ({ onClose, embedded = false }: RepoImporterProps) =>
         fetchRepoInfo(parsed.owner, parsed.repo),
         fetchRepoContents(parsed.owner, parsed.repo),
       ]);
+      loadedRepoRef.current = info.full_name || `${parsed.owner}/${parsed.repo}`;
+      setExpandedFolders(new Set());
+      setSelectedFilePath(null);
+      setSelectedFileUrl(null);
+      setHighlightedHtml(null);
       setRepoInfo(info);
       setFileTree(contents);
 

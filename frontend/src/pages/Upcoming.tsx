@@ -296,6 +296,7 @@ const Upcoming = () => {
             activeFilter={filter}
             onFilterChange={setFilter}
             hideFilterHeader={true}
+            onResetSearch={() => setSearchQuery("")}
           />
         </section>
       </div>

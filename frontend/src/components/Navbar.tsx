@@ -96,7 +96,7 @@ const Navbar = () => {
       `}</style>
 
       <nav
-        className="flex-between fixed z-50 w-full px-4 sm:px-6 py-3.5 lg:px-10 backdrop-blur-xl transition-all duration-300 dark:bg-[#020b18]/90 bg-white/90 border-b dark:border-cyan-500/10 border-cyan-500/15 dark:shadow-[0_4px_24px_rgba(0,40,100,0.2)] shadow-[0_4px_20px_rgba(0,60,140,0.06)] relative overflow-hidden"
+        className="flex-between fixed z-50 w-full px-4 sm:px-6 py-3.5 lg:px-10 backdrop-blur-xl transition-all duration-300 dark:bg-[#020b18]/90 bg-white/90 border-b dark:border-cyan-500/10 border-cyan-500/15 dark:shadow-[0_4px_24px_rgba(0,40,100,0.2)] shadow-[0_4px_20px_rgba(0,60,140,0.06)] overflow-hidden"
       >
         {/* Subtle background gradient overlay with opacity transition */}
         <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 bg-gradient-to-r from-white via-[#f0f8ff] to-white dark:opacity-0 opacity-90 -z-10" />

@@ -19,6 +19,7 @@ import {
 import { useGetCallById } from "@/hooks/useGetCallById";
 import { useToast } from "@/components/ui/use-toast";
 import { formatMeetingCode } from "@/lib/meetingUtils";
+import { copyToClipboard } from "@/lib/clipboard";
 import LiveClockBadge from "@/components/LiveClockBadge";
 
 // Animated SVG wave layer with dual-theme smooth crossfade (aligned with Home & Upcoming)
@@ -167,8 +168,9 @@ const PersonalRoom = () => {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(meetingLink);
+  const handleCopyLink = async () => {
+    const ok = await copyToClipboard(meetingLink);
+    if (!ok) return;
     setIsCopiedLink(true);
     toast({
       title: "Classroom Link Copied",
@@ -177,9 +179,10 @@ const PersonalRoom = () => {
     setTimeout(() => setIsCopiedLink(false), 2200);
   };
 
-  const handleCopyId = () => {
+  const handleCopyId = async () => {
     if (!meetingId) return;
-    navigator.clipboard.writeText(meetingId);
+    const ok = await copyToClipboard(meetingId);
+    if (!ok) return;
     setIsCopiedId(true);
     toast({
       title: "Meeting ID Copied",
@@ -188,9 +191,10 @@ const PersonalRoom = () => {
     setTimeout(() => setIsCopiedId(false), 2200);
   };
 
-  const handleCopyInvitation = () => {
+  const handleCopyInvitation = async () => {
     const invitationText = `Join my personal classroom on CollabClass!\nTopic: ${roomTopic}\nMeeting ID: ${meetingId}\nJoin Link: ${meetingLink}`;
-    navigator.clipboard.writeText(invitationText);
+    const ok = await copyToClipboard(invitationText);
+    if (!ok) return;
     setIsCopiedInvitation(true);
     toast({
       title: "Full Invitation Copied",

@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import { Call, useStreamVideoClient } from '@stream-io/video-react-sdk';
 
-export const useGetCallById = (id: string | string[]) => {
+interface UseGetCallByIdOptions {
+  autoCreatePersonal?: boolean;
+  personalHeading?: string;
+}
+
+export const useGetCallById = (
+  id: string | string[],
+  options?: UseGetCallByIdOptions
+) => {
   const [call, setCall] = useState<Call>();
   const [isCallLoading, setIsCallLoading] = useState(true);
 
   const client = useStreamVideoClient();
+  const autoCreatePersonal = Boolean(options?.autoCreatePersonal);
+  const personalHeading = options?.personalHeading;
 
   useEffect(() => {
-    const hasId = Array.isArray(id) ? id.length > 0 : Boolean(id && id.trim());
+    const rawId = Array.isArray(id) ? id[0] : id;
+    const hasId = Boolean(rawId && rawId.trim());
     if (!client || !hasId) {
       setCall(undefined);
       setIsCallLoading(false);
@@ -26,6 +37,21 @@ export const useGetCallById = (id: string | string[]) => {
 
         if (!cancelled && calls.length > 0) {
           setCall(calls[0]);
+        } else if (!cancelled && autoCreatePersonal && rawId) {
+          const personalCall = client.call("default", rawId);
+          await personalCall.getOrCreate({
+            data: {
+              starts_at: new Date().toISOString(),
+              custom: {
+                heading: personalHeading || "Personal Classroom",
+                description: "Personal Classroom Stage Session",
+                creatorId: rawId,
+              },
+            },
+          });
+          if (!cancelled) {
+            setCall(personalCall);
+          }
         }
       } catch (error) {
         console.error(error);
@@ -40,7 +66,7 @@ export const useGetCallById = (id: string | string[]) => {
     return () => {
       cancelled = true;
     };
-  }, [client, id]);
+  }, [client, id, autoCreatePersonal, personalHeading]);
 
   return { call, isCallLoading };
 };

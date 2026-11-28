@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { HeroLiveClock } from "@/components/LiveClockBadge";
+import { copyToClipboard } from "@/lib/clipboard";
 import {
   Radio,
   Calendar,
@@ -264,9 +265,10 @@ const Home = () => {
     return `${baseUrl}/meeting/${user.id}?personal=true`;
   }, [user?.id]);
 
-  const copyPersonalRoomLink = () => {
+  const copyPersonalRoomLink = async () => {
     if (!personalRoomLink) return;
-    navigator.clipboard.writeText(personalRoomLink);
+    const ok = await copyToClipboard(personalRoomLink);
+    if (!ok) return;
     setIsCopiedPersonal(true);
     toast({ title: "Personal Classroom Link Copied!" });
     setTimeout(() => setIsCopiedPersonal(false), 2500);
@@ -733,9 +735,9 @@ const Home = () => {
                   <div className="flex items-center gap-3 self-end md:self-auto flex-shrink-0">
                     <button
                       type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(meetingUrl);
-                        toast({ title: "Class Link Copied!" });
+                      onClick={async () => {
+                        const ok = await copyToClipboard(meetingUrl);
+                        toast({ title: ok ? "Class Link Copied!" : "Failed to copy link" });
                       }}
                       className="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-cyan-300 hover:text-cyan-700 flex items-center gap-1 px-3 py-2 rounded-xl dark:bg-white/5 bg-slate-100 dark:border-white/10 border-slate-200 transition-colors duration-300"
                     >
@@ -850,9 +852,9 @@ const Home = () => {
                   <div className="flex items-center justify-between pt-2 border-t border-white/5">
                     <button
                       type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(meetingUrl);
-                        toast({ title: "Class Link Copied!" });
+                      onClick={async () => {
+                        const ok = await copyToClipboard(meetingUrl);
+                        toast({ title: ok ? "Class Link Copied!" : "Failed to copy link" });
                       }}
                       className="text-xs dark:text-slate-400 text-slate-600 dark:hover:text-cyan-300 hover:text-cyan-700 flex items-center gap-1 transition-colors duration-300"
                     >

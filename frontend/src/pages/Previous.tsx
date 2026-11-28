@@ -221,7 +221,11 @@ const Previous = () => {
 
         {/* Meeting List */}
         <section className="relative w-full">
-          <CallList type="ended" searchQuery={searchQuery} />
+          <CallList
+            type="ended"
+            searchQuery={searchQuery}
+            onResetSearch={() => setSearchQuery("")}
+          />
         </section>
       </div>
     </div>

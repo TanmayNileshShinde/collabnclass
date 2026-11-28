@@ -12,6 +12,7 @@ import { useToast } from "./ui/use-toast";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { generateMeetingCode } from "@/lib/meetingUtils";
+import { copyToClipboard } from "@/lib/clipboard";
 import "react-datepicker/dist/react-datepicker.css";
 
 const createInitialValues = () => ({
@@ -42,6 +43,7 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
   const [values, setValues] = useState(createInitialValues);
   const [callDetail, setCallDetail] = useState<Call>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
   const client = useStreamVideoClient();
   const { user } = useUser();
   const { toast } = useToast();
@@ -52,7 +54,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
   };
 
   const joinMeetingByCodeOrLink = async (rawInput: string) => {
-    if (!client) return;
+    if (!client || isJoining) return;
+    setIsJoining(true);
     try {
       const trimmed = rawInput.trim();
       if (!trimmed) {
@@ -120,6 +123,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -224,6 +229,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
           isOpen={meetingState === "isScheduleMeeting"}
           onClose={resetForm}
           title="Schedule Classroom Session"
+          buttonText={isSubmitting ? "Scheduling..." : "Schedule Meeting"}
+          isLoading={isSubmitting}
           handleClick={createMeeting}
         >
           <div className="flex flex-col gap-3">
@@ -272,7 +279,10 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
           isOpen={meetingState === "isScheduleMeeting"}
           onClose={() => { setMeetingState(undefined); setCallDetail(undefined); }}
           title="Classroom Scheduled"
-          handleClick={() => { navigator.clipboard.writeText(meetingLink); toast({ title: "Class Link Copied!" }); }}
+          handleClick={async () => {
+            const ok = await copyToClipboard(meetingLink);
+            toast({ title: ok ? "Class Link Copied!" : "Failed to copy link" });
+          }}
           image={"/icons/checked.svg"}
           buttonIcon="/icons/copy.svg"
           className="text-center"
@@ -302,10 +312,10 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      navigator.clipboard.writeText(meetingCode);
-                      toast({ title: "Classroom Code Copied" });
+                      const ok = await copyToClipboard(meetingCode);
+                      toast({ title: ok ? "Classroom Code Copied" : "Failed to copy code" });
                     }}
                     className="border-cyan-500/30 bg-cyber-elevated hover:bg-cyber-muted hover:border-cyan-400 text-cyan-300 transition-all duration-200"
                   >
@@ -333,7 +343,8 @@ const MeetingTypeList: React.FC<MeetingTypeListProps> = () => {
         onClose={() => { setMeetingState(undefined); setValues(createInitialValues()); }}
         title="Join Classroom"
         className="text-center"
-        buttonText="Connect to Classroom"
+        buttonText={isJoining ? "Connecting..." : "Connect to Classroom"}
+        isLoading={isJoining}
         handleClick={async () => {
           const code = values.meetingCode.trim();
           const link = values.link.trim();

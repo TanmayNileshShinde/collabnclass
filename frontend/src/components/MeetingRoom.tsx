@@ -64,6 +64,7 @@ import {
 import Loader from "./Loader";
 import EndCallButton from "./EndCallButton";
 import { formatMeetingCode } from "@/lib/meetingUtils";
+import { copyToClipboard } from "@/lib/clipboard";
 import AttendanceService from "@/services/AttendanceService";
 import { useUser } from "@clerk/clerk-react";
 import { useChat } from "@/contexts/ChatContext";
@@ -470,12 +471,17 @@ const MeetingRoomContent = () => {
   const callingStateRef = useRef(callingState);
   callingStateRef.current = callingState;
 
-  // track local user attendance accurately per meeting/user session
+  // track local user attendance accurately per meeting/user session (survives transient reconnects)
+  const isAttendanceActive =
+    callingState === CallingState.JOINED ||
+    callingState === CallingState.RECONNECTING ||
+    callingState === CallingState.RECONNECTING_FAILED;
+
   useEffect(() => {
     const meetingId = call?.id;
     const currentUserId = user?.id;
     const userName = user?.fullName || user?.username || "Unknown User";
-    if (!meetingId || !currentUserId || callingState !== CallingState.JOINED) return;
+    if (!meetingId || !currentUserId || !isAttendanceActive) return;
 
     AttendanceService.recordJoin(meetingId, currentUserId, userName).catch(
       (error) => {
@@ -497,7 +503,7 @@ const MeetingRoomContent = () => {
         console.error("Failed to record attendance leave:", error);
       });
     };
-  }, [call?.id, user?.id, callingState]);
+  }, [call?.id, user?.id, isAttendanceActive]);
 
   const handleToggleDock = (tab: SideDockTab) => {
     if (isDockOpen && activeDockTab === tab) {
@@ -546,6 +552,10 @@ const MeetingRoomContent = () => {
       }
 
       if (e.key === "Escape") {
+        // Let Excalidraw handle Escape when canvas/tool owns focus
+        if (actions.showWhiteboard && target?.closest(".excalidraw")) {
+          return;
+        }
         setShowShortcutsModal(false);
         setIsDiagnosticsOpen(false);
         if (actions.showWhiteboard) setShowWhiteboard(false);
@@ -595,7 +605,14 @@ const MeetingRoomContent = () => {
   if (isCallEnded) {
     return (
       <ClassroomEndedModal
-        onLeave={() => navigate("/")}
+        onLeave={async () => {
+          await Promise.allSettled([
+            call?.camera?.disable(),
+            call?.microphone?.disable(),
+            call?.leave(),
+          ]);
+          navigate("/");
+        }}
         endedByName={endedByName}
       />
     );
@@ -613,17 +630,17 @@ const MeetingRoomContent = () => {
     (localParticipant ? 1 : 0) +
     participants.filter((p) => p.userId !== localParticipant?.userId).length;
 
-  const copyMeetingCode = () => {
+  const copyMeetingCode = async () => {
     if (meetingCode) {
-      navigator.clipboard.writeText(meetingCode);
-      toast({ title: "Meeting Code Copied", description: meetingCode });
+      const ok = await copyToClipboard(meetingCode);
+      toast({ title: ok ? "Meeting Code Copied" : "Copy Failed", description: meetingCode });
     }
   };
 
-  const copyMeetingLink = () => {
+  const copyMeetingLink = async () => {
     if (meetingLink) {
-      navigator.clipboard.writeText(meetingLink);
-      toast({ title: "Meeting Link Copied", description: "URL ready to share." });
+      const ok = await copyToClipboard(meetingLink);
+      toast({ title: ok ? "Meeting Link Copied" : "Copy Failed", description: "URL ready to share." });
     }
   };
 
@@ -1018,7 +1035,7 @@ const MeetingRoomContent = () => {
           UNIFIED BOTTOM COCKPIT DOCK (Single Sleek Bar, Industry-Standard Groups)
       ======================================================== */}
       <div className="fixed bottom-3 inset-x-0 z-40 flex items-center justify-center px-2 pointer-events-none">
-        <div className="flex items-center justify-center gap-1.5 sm:gap-2 pointer-events-auto px-3.5 py-2 rounded-2xl bg-[#040e1c]/95 backdrop-blur-2xl border border-[rgba(0,180,255,0.28)] shadow-[0_10px_40px_rgba(0,0,0,0.75)] max-w-[98vw] overflow-x-auto no-scrollbar">
+        <div className="flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 pointer-events-auto px-3.5 py-2 rounded-2xl bg-[#040e1c]/95 backdrop-blur-2xl border border-[rgba(0,180,255,0.28)] shadow-[0_10px_40px_rgba(0,0,0,0.75)] max-w-[98vw] overflow-x-auto no-scrollbar">
 
           {/* 1. Core Media Controls (Sleek Mic & Cam with Dropdown Device Selector) */}
           <div className="flex items-center gap-1.5 shrink-0">

@@ -4,6 +4,7 @@ import { useToast } from "./ui/use-toast";
 import { Users, Copy, Play, Trash2, Radio, Clock, Check, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMeetingCode } from "@/lib/meetingUtils";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface MeetingCardProps {
   title: string;
@@ -19,6 +20,7 @@ interface MeetingCardProps {
   showDeleteButton?: boolean;
   showAttendees?: boolean;
   meetingId?: string;
+  meetingCode?: string;
   onViewAttendance?: (meetingId: string, meetingTitle: string) => void;
 }
 
@@ -36,24 +38,34 @@ const MeetingCard = ({
   showDeleteButton,
   showAttendees = true,
   meetingId,
+  meetingCode,
   onViewAttendance,
 }: MeetingCardProps) => {
   const { toast } = useToast();
   const [isCopiedLink, setIsCopiedLink] = useState(false);
   const [isCopiedCode, setIsCopiedCode] = useState(false);
+  const displayCode = meetingCode || meetingId;
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(link);
+  const copyLink = async () => {
+    const ok = await copyToClipboard(link);
+    if (!ok) {
+      toast({ title: "Copy failed", variant: "destructive" });
+      return;
+    }
     setIsCopiedLink(true);
     toast({ title: "Classroom Link Copied", description: "Meeting URL ready to share." });
     setTimeout(() => setIsCopiedLink(false), 2200);
   };
 
-  const copyCode = () => {
-    if (!meetingId) return;
-    navigator.clipboard.writeText(meetingId);
+  const copyCode = async () => {
+    if (!displayCode) return;
+    const ok = await copyToClipboard(displayCode);
+    if (!ok) {
+      toast({ title: "Copy failed", variant: "destructive" });
+      return;
+    }
     setIsCopiedCode(true);
-    toast({ title: "Meeting Code Copied", description: meetingId });
+    toast({ title: "Meeting Code Copied", description: formatMeetingCode(displayCode) });
     setTimeout(() => setIsCopiedCode(false), 2200);
   };
 
@@ -140,7 +152,7 @@ const MeetingCard = ({
             <span className="truncate">{date}</span>
           </div>
 
-          {meetingId && (
+          {displayCode && (
             <button
               onClick={copyCode}
               className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono dark:bg-white/[0.04] bg-slate-100 border dark:border-white/10 border-slate-200 hover:border-cyan-400 text-neutral-300 dark:text-neutral-300 text-slate-600 hover:text-cyan-500 dark:hover:text-cyan-300 transition-colors shadow-sm"
@@ -148,7 +160,7 @@ const MeetingCard = ({
             >
               <span className="text-[10px] uppercase font-bold text-neutral-400">CODE:</span>
               <span className="font-semibold tracking-wider text-cyan-600 dark:text-cyan-300">
-                {formatMeetingCode(meetingId)}
+                {formatMeetingCode(displayCode)}
               </span>
               {isCopiedCode ? (
                 <Check size={12} className="text-emerald-400 shrink-0" />

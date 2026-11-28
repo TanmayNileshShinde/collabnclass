@@ -34,7 +34,9 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const syncIndicatorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const storageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const remoteResetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRemoteUpdateRef = useRef(false);
+  const hasWarnedPayloadSizeRef = useRef(false);
 
   // Clear debounce timers on unmount
   useEffect(() => {
@@ -42,6 +44,7 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
       if (syncIndicatorTimeoutRef.current) clearTimeout(syncIndicatorTimeoutRef.current);
       if (storageTimeoutRef.current) clearTimeout(storageTimeoutRef.current);
+      if (remoteResetTimeoutRef.current) clearTimeout(remoteResetTimeoutRef.current);
     };
   }, []);
 
@@ -122,8 +125,17 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
           try {
             const payloadStr = JSON.stringify(elements);
             if (payloadStr.length > 22000) {
+              if (!hasWarnedPayloadSizeRef.current) {
+                hasWarnedPayloadSizeRef.current = true;
+                toast({
+                  title: "Whiteboard sync paused",
+                  description: "Drawing exceeds the 22KB live-sync limit. Export or clear the board to resume peer sync.",
+                  variant: "destructive",
+                });
+              }
               return;
             }
+            hasWarnedPayloadSizeRef.current = false;
             await call.sendCustomEvent({
               type: "whiteboard-elements-update",
               elements,
@@ -148,7 +160,10 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
     const applyRemoteScene = (sceneUpdate: { elements: any; appState?: any }) => {
       isRemoteUpdateRef.current = true;
       excalidrawAPI.updateScene(sceneUpdate);
-      setTimeout(() => {
+      if (remoteResetTimeoutRef.current) {
+        clearTimeout(remoteResetTimeoutRef.current);
+      }
+      remoteResetTimeoutRef.current = setTimeout(() => {
         isRemoteUpdateRef.current = false;
       }, 0);
     };
@@ -227,6 +242,9 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
       }
       if (syncIndicatorTimeoutRef.current) {
         clearTimeout(syncIndicatorTimeoutRef.current);
+      }
+      if (remoteResetTimeoutRef.current) {
+        clearTimeout(remoteResetTimeoutRef.current);
       }
     };
   }, [call, user?.id, user?.fullName, user?.firstName, excalidrawAPI, debouncedSaveToStorage, storageKey, toast, triggerSyncIndicator]);
@@ -404,6 +422,22 @@ const Whiteboard = ({ onClose }: WhiteboardProps) => {
         elements: [],
         appState: {},
       });
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
+      }
+      if (storageTimeoutRef.current) {
+        clearTimeout(storageTimeoutRef.current);
+        storageTimeoutRef.current = null;
+      }
+      hasWarnedPayloadSizeRef.current = false;
+      isRemoteUpdateRef.current = true;
+      if (remoteResetTimeoutRef.current) {
+        clearTimeout(remoteResetTimeoutRef.current);
+      }
+      remoteResetTimeoutRef.current = setTimeout(() => {
+        isRemoteUpdateRef.current = false;
+      }, 0);
       localStorage.removeItem(storageKey);
 
       if (call) {

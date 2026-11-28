@@ -26,7 +26,7 @@ html, body {
   background: transparent !important;
 }
 
-video {
+.str-video__participant-view video {
   position: relative !important;
   min-height: 200px !important;
   min-width: 200px !important;
@@ -70,8 +70,8 @@ video {
 .str-video__participant-tile[data-screen-share="true"] {
   width: 100% !important;
   height: 100% !important;
-  min-width: 600px !important;
-  min-height: 400px !important;
+  min-width: 0 !important;
+  min-height: 240px !important;
   max-width: 100% !important;
   max-height: calc(100vh - 150px) !important;
   flex: 1 1 auto !important;
@@ -80,6 +80,16 @@ video {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+@media (min-width: 768px) {
+  .str-video__participant-view:has(.str-video__screen-share),
+  .str-video__participant-tile:has(.str-video__screen-share),
+  .str-video__participant-view[data-screen-share="true"],
+  .str-video__participant-tile[data-screen-share="true"] {
+    min-width: 600px !important;
+    min-height: 400px !important;
+  }
 }
 
 /* Ensure screen share video is visible and not covered by overlay */
@@ -95,7 +105,7 @@ video {
 /* Ensure video container doesn't shrink - use important to override Stream.io defaults */
 .str-video__call-layout,
 .str-video__call {
-  min-width: 400px !important;
+  min-width: 0 !important;
   width: 100% !important;
   flex-shrink: 0 !important;
   box-sizing: border-box !important;
@@ -103,11 +113,20 @@ video {
 
 .str-video__grid-layout,
 .str-video__speaker-layout__wrapper {
-  min-width: 400px !important;
+  min-width: 0 !important;
   width: 100% !important;
   flex-shrink: 0 !important;
   overflow: visible !important;
   box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+  .str-video__call-layout,
+  .str-video__call,
+  .str-video__grid-layout,
+  .str-video__speaker-layout__wrapper {
+    min-width: 400px !important;
+  }
 }
 
 .str-video__grid-layout > *,

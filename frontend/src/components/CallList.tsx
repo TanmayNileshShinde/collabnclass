@@ -1,5 +1,5 @@
 import { Call, CallRecording } from "@stream-io/video-react-sdk";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 
@@ -47,6 +47,7 @@ const CallList = ({
 
   const [recordingEntries, setRecordingEntries] = useState<RecordingEntry[]>([]);
   const [isRecordingsLoading, setIsRecordingsLoading] = useState(type === "recordings");
+  const hasLoadedRecordingsRef = useRef(false);
   const [internalFilter, setInternalFilter] = useState<UpcomingFilterType>("all");
   const [attendanceModal, setAttendanceModal] = useState<{
     isOpen: boolean;
@@ -198,7 +199,9 @@ const CallList = ({
 
     const fetchRecordings = async () => {
       if (isLoading) return;
-      setIsRecordingsLoading(true);
+      if (!hasLoadedRecordingsRef.current) {
+        setIsRecordingsLoading(true);
+      }
       try {
         const callsToQuery = callRecordings ?? [];
         const settledCalls = await Promise.allSettled(
@@ -222,6 +225,7 @@ const CallList = ({
         }
 
         if (isMounted) {
+          hasLoadedRecordingsRef.current = true;
           setRecordingEntries(entries);
           onRecordingsCountChange?.(entries.length);
         }
@@ -345,10 +349,15 @@ const CallList = ({
                         })()
                       : "Date not set"
                     : (meeting as Call).state?.startsAt
-                    ? (meeting as Call).state.startsAt!.toLocaleString([], {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })
+                    ? (() => {
+                        const d = new Date((meeting as Call).state.startsAt!);
+                        return !isNaN(d.getTime())
+                          ? d.toLocaleString([], {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : "Date not set";
+                      })()
                     : "Date not set"
                 }
                 isPreviousMeeting={type === "ended"}
@@ -373,6 +382,7 @@ const CallList = ({
                 showDeleteButton={type === "recordings"}
                 showAttendees={type !== "recordings"}
                 meetingId={(meeting as Call)?.id}
+                meetingCode={(meeting as Call)?.state?.custom?.meetingCode}
                 onViewAttendance={type === "ended" ? handleViewAttendance : undefined}
                 onDelete={() =>
                   type === "recordings"

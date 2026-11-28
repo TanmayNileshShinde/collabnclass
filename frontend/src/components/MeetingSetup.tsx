@@ -31,6 +31,7 @@ import NetworkDiagnosticsModal from "./NetworkDiagnosticsModal";
 import Alert from "./Alert";
 import { useToast } from "./ui/use-toast";
 import { formatMeetingCode } from "@/lib/meetingUtils";
+import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 
 const SetupClock = memo(() => {
@@ -406,10 +407,14 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       await call.join();
       if (!isMicCamToggled) {
         window.sessionStorage.removeItem("join_muted");
-        if (call.camera.state.status !== "enabled") {
+        if (isCameraMuted) {
+          await call.camera.disable().catch(console.warn);
+        } else if (call.camera.state.status !== "enabled") {
           await call.camera.enable().catch(console.warn);
         }
-        if (call.microphone.state.status !== "enabled") {
+        if (isMicMuted) {
+          await call.microphone.disable().catch(console.warn);
+        } else if (call.microphone.state.status !== "enabled") {
           await call.microphone.enable().catch(console.warn);
         }
       } else {
@@ -442,8 +447,9 @@ const MeetingSetup = ({ setIsSetupComplete }: MeetingSetupProps) => {
       ? `${user?.fullName || user?.username || "Host"}'s Personal Classroom`
       : "Classroom Stage Session");
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(meetingId);
+  const handleCopyCode = async () => {
+    const ok = await copyToClipboard(meetingId);
+    if (!ok) return;
     setIsCopiedCode(true);
     toast({
       title: "Meeting Code Copied",

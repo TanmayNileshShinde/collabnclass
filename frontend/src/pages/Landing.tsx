@@ -393,7 +393,7 @@ function InteractiveClassroomPreview() {
                   <div className="p-3 rounded-2xl dark:bg-cyan-950/40 bg-cyan-50/80 border dark:border-cyan-500/30 border-cyan-200 text-xs dark:text-cyan-100 text-slate-800 space-y-2 max-w-[90%]">
                     <p className="font-semibold text-cyan-400 text-[11px] uppercase tracking-wider">Copilot Analysis</p>
                     <p className="leading-relaxed">
-                      In a pure <strong>P2P Mesh</strong>, each client uploads $N-1$ streams, which saturates uplink at ~4-6 peers. An <strong>SFU (Selective Forwarding Unit)</strong> routes packets through a central relay, enabling smooth 50+ participant lectures with adaptive bitrate.
+                      In a pure <strong>P2P Mesh</strong>, each client uploads <span className="font-mono">N - 1</span> streams, which saturates uplink at ~4-6 peers. An <strong>SFU (Selective Forwarding Unit)</strong> routes packets through a central relay, enabling smooth 50+ participant lectures with adaptive bitrate.
                     </p>
                   </div>
                 </div>
@@ -607,7 +607,7 @@ export default function CollabClassLanding() {
           {/* Main Title */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] mb-6">
             Where Code, Canvas &amp;<br />
-            <span className="shimmer-text">Conversations</span> Flow as One.
+            <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500 bg-clip-text text-transparent">Conversations</span> Flow as One.
           </h1>
 
           {/* Subtitle */}
